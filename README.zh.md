@@ -131,23 +131,23 @@
 
 ## 安裝
 
-還沒有上架社區外掛市場，所以需要手動安裝：
+尚未上架 Obsidian 社群外掛目錄，所以需要手動安裝：
 
 ```bash
 npm install
 npm run build
 ```
 
-然後把 `main.js`、`manifest.json` 和 `styles.css` 複製進你的庫：
+然後把 `main.js`、`manifest.json` 和 `styles.css` 複製至你的 Obsidian 筆記庫：
 
 ```bash
 mkdir -p /path/to/vault/.obsidian/plugins/mdmap-mode
 cp main.js manifest.json styles.css /path/to/vault/.obsidian/plugins/mdmap-mode/
 ```
 
-在 *設定 → 社群外掛* 裡啓用 **mdmap mode**。
+在 *設定 → 社群外掛* 裡啟用 **mdmap mode**。
 
-做開發的話改用符號連結，這樣 `npm run dev` 會就地重新構建，然後用 *不儲存而重新載入應用*（或 Hot-Reload 外掛）來載入改動：
+做開發的話改用符號連結，這樣 `npm run dev` 會就地重新編譯，然後用 *不儲存而重新載入應用*（或 Hot-Reload 外掛）來載入改動：
 
 ```bash
 ln -s "$PWD" /path/to/vault/.obsidian/plugins/mdmap-mode
@@ -203,7 +203,7 @@ src/main.ts    外掛：檢視模式註冊、模式切換、命令
 
 MIT — 見 [LICENSE](LICENSE)。Copyright (c) 2026 PHANTOM-Nw。
 
-本外掛不打包任何第三方程式碼：沒有運行時依賴，公式排版借用的是 Obsidian 內建的
+本外掛不另外打包第三方程式碼：沒有運行時依賴，公式排版借用的是 Obsidian 內建的
 MathJax，圖示走 Obsidian 的 `setIcon`，兩者都不隨外掛分發。
 
 XMind、MindNode 是各自權利人的商標，本項目與它們沒有任何關聯，提及僅為描述操作
