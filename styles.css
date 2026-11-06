@@ -734,14 +734,12 @@
 
 /* --- toolbar ------------------------------------------------------------- */
 
-/* Two panels in the corner, not one: the exports are a block of their own
-   above the camera and the map. The column is what carries the corner
-   position, so the camera panel keeps the bottom edge the pointer already
-   knows and the export panel stacks over it, both flush to the right edge. */
+/* The controls sit inside the map content region, below Obsidian's own
+   view header. They never share the Android bottom navigation area. */
 .mm-toolbars {
 	position: absolute;
+	top: 12px;
 	right: 12px;
-	bottom: 12px;
 	z-index: 10;
 	display: flex;
 	flex-direction: column;
@@ -749,7 +747,14 @@
 	gap: 8px;
 }
 
-/* The panel itself -- one rule, worn by both. */
+/* The first row remains visible; the other two are hidden until requested.
+   Explicitly override the flex display when the native hidden property is set. */
+.mm-toolbar[hidden],
+.mdmap-mode.mm-search-open .mm-toolbars {
+	display: none;
+}
+
+/* Each row shares the same controls styling. */
 .mm-toolbar {
 	display: flex;
 	gap: 2px;
@@ -791,16 +796,10 @@
 	pointer-events: none;
 }
 
-/* Obsidian Android can overlay its navigation controls on the workspace.
-   Keep the full action stack above them, including the system safe area. */
-body.is-mobile .mdmap-mode .mm-toolbars {
-	bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-}
-
 /* --- search --------------------------------------------------------------- */
 
-/* Above the toolbar (10) and below the popovers and the block dialog (20): the
-   bar floats over the canvas, never over a panel. */
+/* When searching, the map controls temporarily hide to leave the same
+   top-right region available for the search input. */
 .mm-search {
 	position: absolute;
 	top: 12px;
