@@ -666,6 +666,8 @@ export class MindmapView extends TextFileView implements MapController {
 
 	/** Called by the plugin when settings change. */
 	refresh(): void {
+		if (this.isLocked() && this.editingId !== null) this.editingId = null;
+		if (this.isLocked()) this.closeDialog();
 		this.shortcutBindings = null;
 		this.perf.enabled = this.plugin.settings.debugTiming;
 		// A setting can change what every card measures, so the next paint has to
@@ -754,6 +756,8 @@ export class MindmapView extends TextFileView implements MapController {
 			const active = this.plugin.settings.layout === mode;
 			button.toggleClass("is-active", active);
 			button.setAttribute("aria-pressed", String(active));
+			button.toggleClass("is-disabled", locked);
+			button.setAttribute("aria-disabled", String(locked));
 		}
 		for (const [button, disabled] of [
 			[this.undoButton, locked || this.undoStack.length === 0],
@@ -2613,7 +2617,7 @@ export class MindmapView extends TextFileView implements MapController {
 			sourcePath: this.file?.path ?? "",
 			blocks,
 			mode: this.isLocked() ? "read" : mode,
-			readonly: this.isLocked(),
+			locked: this.isLocked(),
 			onSave: (edits) => this.saveBody(key, edits),
 			onClosed: () => {
 				this.dialog = null;
