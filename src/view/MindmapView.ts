@@ -328,8 +328,6 @@ export class MindmapView extends TextFileView implements MapController {
 	private lockButton: HTMLElement | null = null;
 	private moreToolsButton: HTMLElement | null = null;
 	private extraToolbars: HTMLElement[] = [];
-	private extraToolsExpanded = false;
-
 	private search: SearchBar | null = null;
 	/** Kept when the bar closes, dropped when the file changes. */
 	private searchQuery: SearchQuery = { text: "", regex: false };
@@ -746,8 +744,7 @@ export class MindmapView extends TextFileView implements MapController {
 		});
 		this.lockButton = button(actions, "lock", "Unlock editing", () => this.plugin.setLocked(!this.isLocked()));
 		this.moreToolsButton = button(actions, "chevron-down", "Show more tools", () => {
-			this.extraToolsExpanded = !this.extraToolsExpanded;
-			this.updateExtraToolbars();
+			this.plugin.setExtraToolsExpanded(!this.plugin.settings.extraToolsExpanded);
 		});
 		this.updateExtraToolbars();
 		this.updateActionButtons();
@@ -769,14 +766,15 @@ export class MindmapView extends TextFileView implements MapController {
 		button(camera, "help-circle", "Keyboard shortcuts", () => this.showShortcuts());
 	}
 
-	private updateExtraToolbars(): void {
-		for (const toolbar of this.extraToolbars) toolbar.hidden = !this.extraToolsExpanded;
+	updateExtraToolbars(): void {
+		const expanded = this.plugin.settings.extraToolsExpanded;
+		for (const toolbar of this.extraToolbars) toolbar.hidden = !expanded;
 		if (!this.moreToolsButton) return;
-		const label = this.extraToolsExpanded ? "Hide more tools" : "Show more tools";
-		setIcon(this.moreToolsButton, this.extraToolsExpanded ? "chevron-up" : "chevron-down");
+		const label = expanded ? "Hide more tools" : "Show more tools";
+		setIcon(this.moreToolsButton, expanded ? "chevron-up" : "chevron-down");
 		this.moreToolsButton.setAttribute("aria-label", label);
 		this.moreToolsButton.setAttribute("title", label);
-		this.moreToolsButton.setAttribute("aria-expanded", String(this.extraToolsExpanded));
+		this.moreToolsButton.setAttribute("aria-expanded", String(expanded));
 	}
 
 	private updateActionButtons(): void {
