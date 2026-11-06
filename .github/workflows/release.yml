@@ -70,9 +70,9 @@ jobs:
       # keeping it is a deliberate answer to it.
       - name: Package a convenience zip
         run: |
-          mkdir -p dist/mindmap-mode
-          cp main.js manifest.json styles.css LICENSE dist/mindmap-mode/
-          (cd dist && zip -r mindmap-mode.zip mindmap-mode)
+          mkdir -p dist/mdmap-mode
+          cp main.js manifest.json styles.css LICENSE dist/mdmap-mode/
+          (cd dist && zip -r mdmap-mode.zip mindmap-mode)
 
       - name: Attest the build provenance
         uses: actions/attest-build-provenance@v2
@@ -80,7 +80,7 @@ jobs:
           subject-path: |
             main.js
             styles.css
-            dist/mindmap-mode.zip
+            dist/mdmap-mode.zip
 
       - name: Write release notes
         env:
@@ -89,7 +89,7 @@ jobs:
         run: |
           prev=$(node scripts/check-changelog.mjs --previous)
           {
-            echo "## 更新内容 / What's changed"
+            echo "## 更新內容 / What's changed"
             echo ""
             node scripts/check-changelog.mjs --print
             echo ""
@@ -103,29 +103,29 @@ jobs:
           # a blank line is a paragraph break in every renderer, while a bare
           # newline is one only where the host turns newlines into breaks.
           cat >> release-notes.md <<EOF
-          ## 安装 / Install
+          ## 安裝 / Install
 
-          **手动安装：** 把下方的 \`main.js\`、\`manifest.json\`、\`styles.css\` 下载到
+          **手動安裝：** 將下方的 \`main.js\`、\`manifest.json\`、\`styles.css\` 下載至
 
           \`\`\`
-          <your vault>/.obsidian/plugins/mindmap-mode/
+          <your vault>/.obsidian/plugins/mdmap-mode/
           \`\`\`
 
-          然后在 *设置 → 第三方插件* 中启用 **Mindmap Mode**。
-          （或者下载 \`mindmap-mode.zip\`，解压到 \`.obsidian/plugins/\` 下，一个文件搞定。）
+          接著在 *設定 → 社群外掛* 中啟用 **mdmap mode**。
+          （也可以下載 \`mdmap-mode.zip\`，解壓縮至 \`.obsidian/plugins/\` ，即可完成安裝。）
 
-          **BRAT：** 把 \`$REPO\` 添加为 beta 插件。
+          **BRAT：** 將 \`$REPO\` 加入為測試版外掛。
 
           **Manual:** download \`main.js\`, \`manifest.json\` and \`styles.css\` below into the folder above,
-          then enable **Mindmap Mode** in *Settings → Community plugins*.
-          (Or download \`mindmap-mode.zip\` and unzip it into \`.obsidian/plugins/\` -- one download instead of three.)
+          then enable **mdmap mode** in *Settings → Community plugins*.
+          (Or download \`mdmap-mode.zip\` and unzip it into \`.obsidian/plugins/\` -- one download instead of three.)
 
           **BRAT:** add \`$REPO\` as a beta plugin.
 
-          ## 用法 / Use it
+          ## 使用方式 / Use it
 
-          打开一篇笔记，在命令面板里运行 **Toggle mind map view** —— 给它绑一个快捷键，
-          用起来就像切换阅读模式。导图在同一个标签页、同一个文件上打开，不会创建任何文件。
+          開啟一篇筆記，在命令面板中執行 **Toggle mind map view** —— 可以替它設定快捷鍵，
+          操作方式就像切換閱讀模式。心智圖會在同一個分頁開啟原始檔案，不會另外建立檔案。
 
           Open a note and run **Toggle mind map view** from the command palette —
           assign it a hotkey to make it feel like switching reading mode. The map
@@ -158,7 +158,7 @@ jobs:
             --title "$TAG" \
             --notes-file release-notes.md \
             --draft \
-            main.js manifest.json styles.css LICENSE dist/mindmap-mode.zip
+            main.js manifest.json styles.css LICENSE dist/mdmap-mode.zip
 
       - name: Summary
         env:
