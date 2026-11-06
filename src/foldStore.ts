@@ -12,6 +12,13 @@
  * state lives in the plugin's own `data.json` and leaves the markdown alone.
  */
 
+/** Camera position in map coordinates, with the zoom factor. */
+export interface CameraState {
+	centreX: number;
+	centreY: number;
+	scale: number;
+}
+
 /** One note's view state, as it sits in `data.json`. */
 export interface NoteViewState {
 	/**
@@ -30,6 +37,7 @@ export interface NoteViewState {
 	 * focus, and losing it costs a default framing, nothing more.
 	 */
 	focusId?: string;
+	camera?: CameraState;
 	/** Last touched, in ms. Only ever compared, never shown. */
 	at: number;
 }
@@ -64,6 +72,16 @@ function readEntry(value: unknown): NoteViewState | null {
 	};
 	if (typeof value.focusKey === "string") state.focusKey = value.focusKey;
 	if (typeof value.focusId === "string") state.focusId = value.focusId;
+	if (isRecord(value.camera)) {
+		const { centreX, centreY, scale } = value.camera;
+		if (
+			typeof centreX === "number" && Number.isFinite(centreX) &&
+			typeof centreY === "number" && Number.isFinite(centreY) &&
+			typeof scale === "number" && Number.isFinite(scale) && scale > 0
+		) {
+			state.camera = { centreX, centreY, scale };
+		}
+	}
 	return state;
 }
 
@@ -116,6 +134,7 @@ export function putNoteState(
 	const state: NoteViewState = { collapsed: [...entry.collapsed], at: now };
 	if (entry.focusKey !== undefined) state.focusKey = entry.focusKey;
 	if (entry.focusId !== undefined) state.focusId = entry.focusId;
+	if (entry.camera !== undefined) state.camera = { ...entry.camera };
 	return prune({ ...store, [path]: state });
 }
 
