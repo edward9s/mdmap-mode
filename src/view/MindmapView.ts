@@ -380,6 +380,9 @@ export class MindmapView extends TextFileView implements MapController {
 		this.perf.enabled = plugin.settings.debugTiming;
 
 		this.contentEl.addClass("mdmap-mode");
+		// Obsidian mobile uses swipes for drawers and the Quick Action. This view
+		// owns those gestures for panning and pinching its map.
+		this.contentEl.setAttribute("data-ignore-swipe", "");
 		this.canvas = new Canvas(this.contentEl, {
 			wheel: plugin.settings.wheel,
 			// Only blank space starts a pan; everything a node owns belongs to the
@@ -756,8 +759,6 @@ export class MindmapView extends TextFileView implements MapController {
 			const active = this.plugin.settings.layout === mode;
 			button.toggleClass("is-active", active);
 			button.setAttribute("aria-pressed", String(active));
-			button.toggleClass("is-disabled", locked);
-			button.setAttribute("aria-disabled", String(locked));
 		}
 		for (const [button, disabled] of [
 			[this.undoButton, locked || this.undoStack.length === 0],
