@@ -309,7 +309,7 @@ export default class MindmapPlugin extends Plugin {
 	}
 
 	setLayout(layout: LayoutMode): void {
-		if (this.settings.layout === layout) return;
+		if (this.settings.locked || this.settings.layout === layout) return;
 		this.settings.layout = layout;
 		this.refreshAllViews();
 		void this.saveSettings();
