@@ -76,6 +76,7 @@ import {
 import type { Direction, DropMode, MapController } from "./interactions.ts";
 import { resolveIndentUnit } from "../settings.ts";
 import type { LayoutMode } from "../settings.ts";
+import type { CameraState } from "../foldStore.ts";
 import type MindmapPlugin from "../main.ts";
 
 export const MINDMAP_VIEW_TYPE = "mdmap-mode-view";
@@ -257,6 +258,7 @@ interface Framing {
 	fit: boolean;
 	focus: string | null;
 	reveal: string | null;
+	camera: CameraState | null;
 }
 
 export class MindmapView extends TextFileView implements MapController {
@@ -309,6 +311,7 @@ export class MindmapView extends TextFileView implements MapController {
 	 * key, or hidden inside a branch they left folded -- on the whole map.
 	 */
 	private restoreFocusKey: string | null = null;
+	private restoreCameraState: CameraState | null = null;
 	/** Body cards drawn by the last paint, keyed by their synthetic id. */
 	private bodyNodes = new Map<string, BodyRef>();
 	/** Consumed by the next paint. */
@@ -382,7 +385,9 @@ export class MindmapView extends TextFileView implements MapController {
 		this.contentEl.addClass("mdmap-mode");
 		// Obsidian mobile uses swipes for drawers and the Quick Action. This view
 		// owns those gestures for panning and pinching its map.
-		this.contentEl.setAttribute("data-ignore-swipe", "");
+		// Obsidian's swipe opt-out expects a value: an empty attribute did not
+		// stop the mobile drawer/Quick Action in the previous release.
+		this.contentEl.setAttribute("data-ignore-swipe", "true");
 		this.canvas = new Canvas(this.contentEl, {
 			wheel: plugin.settings.wheel,
 			// Only blank space starts a pan; everything a node owns belongs to the
@@ -393,11 +398,15 @@ export class MindmapView extends TextFileView implements MapController {
 			// and the button never fires. A leaf's empty tools slot is still
 			// pannable because that row is `pointer-events: none` until hovered,
 			// so the pointer never lands on the node at all.
-			canPan: (target) => !target.closest(".mm-node"),
+			canPan: (target) => this.isLocked() || !target.closest(".mm-node"),
 			// Every camera move ends up here, coalesced to one call a frame:
 			// panning, zooming, fitting, and the jumps that framing does.
 			onView: () => this.cullToView(),
+			onSettled: () => this.rememberCamera(),
 		});
+		// Target-level protection as well as the view root; mobile swipe handlers
+		// do not consistently inspect ancestor view elements.
+		this.canvas.viewport.setAttribute("data-ignore-swipe", "true");
 		this.canvas.viewport.tabIndex = 0;
 		this.buildToolbar();
 		this.scope = this.buildScope();
@@ -518,6 +527,7 @@ export class MindmapView extends TextFileView implements MapController {
 			this.collapsedKeys.clear();
 			this.selectionKey = null;
 			this.restoreFocusKey = null;
+			this.restoreCameraState = null;
 			this.undoStack = [];
 			this.redoStack = [];
 			this.needsFit = true;
@@ -555,6 +565,7 @@ export class MindmapView extends TextFileView implements MapController {
 		this.collapsedKeys.clear();
 		this.selectionKey = null;
 		this.restoreFocusKey = null;
+		this.restoreCameraState = null;
 		this.undoStack = [];
 		this.redoStack = [];
 		this.updateActionButtons();
@@ -584,6 +595,7 @@ export class MindmapView extends TextFileView implements MapController {
 		// Closing the tab is the last chance to keep a search out of the record:
 		// what reaches disk has to be the fold shape the user chose.
 		if (this.restoreSearchFolds()) this.rememberState();
+		this.rememberCamera();
 		this.resetSearch();
 		this.detachInteractions?.();
 		this.detachInteractions = null;
@@ -902,6 +914,7 @@ export class MindmapView extends TextFileView implements MapController {
 	private seedFolds(): void {
 		const parsed = this.parsed;
 		const path = this.file?.path;
+		this.restoreCameraState = path ? this.plugin.readCameraState(path) : null;
 		const saved = parsed && path ? this.plugin.readNoteState(path) : null;
 		if (!parsed || !saved) {
 			this.foldFrom(INITIAL_EXPAND_LEVEL);
@@ -966,7 +979,7 @@ export class MindmapView extends TextFileView implements MapController {
 
 		const focus = this.selectedNode();
 		if (!focus && this.isDefaultFold()) {
-			this.plugin.forgetNoteState(path);
+			this.plugin.forgetFoldState(path);
 			return;
 		}
 		this.plugin.writeNoteState(path, {
@@ -974,6 +987,14 @@ export class MindmapView extends TextFileView implements MapController {
 			focusKey: focus?.key,
 			focusId: focus?.id,
 		});
+	}
+
+	/** Save only after motion settles, preserving the displayed map centre and zoom. */
+	private rememberCamera(): void {
+		const path = this.file?.path;
+		if (!path || this.needsFit || this.paintedEmpty) return;
+		const camera = this.canvas.cameraState();
+		if (camera) this.plugin.writeCameraState(path, camera);
 	}
 
 	private isDefaultFold(): boolean {
@@ -1267,6 +1288,7 @@ export class MindmapView extends TextFileView implements MapController {
 			fit: this.needsFit,
 			focus: this.restoreFocusKey,
 			reveal: this.pendingReveal,
+			camera: this.restoreCameraState,
 		};
 		this.measureAndPlace(rootLayout, visible, anchor, reason);
 		// Only now is the map on screen the note in `this.data`: past the parse
@@ -1353,6 +1375,7 @@ export class MindmapView extends TextFileView implements MapController {
 		if (framing.fit) {
 			this.needsFit = true;
 			this.restoreFocusKey = framing.focus;
+			this.restoreCameraState = framing.camera;
 		}
 		// Outside the guard on purpose: a jump has to be honoured on the map that
 		// formulas were actually rendered into, fit or no fit.
@@ -1600,8 +1623,11 @@ export class MindmapView extends TextFileView implements MapController {
 			// restored session gets to change -- and only when the node it names
 			// actually made it onto the canvas.
 			this.needsFit = false;
+			const camera = this.restoreCameraState;
+			this.restoreCameraState = null;
 			const focus = this.restoreFocusKey;
 			this.restoreFocusKey = null;
+			if (camera && this.canvas.restoreCamera(camera)) return;
 			const framed = focus === null ? undefined : result.nodes.find((l) => l.node.key === focus);
 			if (framed) {
 				this.canvas.centreOn(framed.x + framed.width / 2, framed.y + framed.height / 2);
