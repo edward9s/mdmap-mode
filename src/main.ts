@@ -359,6 +359,16 @@ export default class MindmapPlugin extends Plugin {
 		void this.saveSettings();
 	}
 
+	setExtraToolsExpanded(expanded: boolean): void {
+		if (this.settings.extraToolsExpanded === expanded) return;
+		this.settings.extraToolsExpanded = expanded;
+		for (const leaf of this.app.workspace.getLeavesOfType(MINDMAP_VIEW_TYPE)) {
+			const view = leaf.view;
+			if (view instanceof MindmapView) view.updateExtraToolbars();
+		}
+		void this.saveSettings();
+	}
+
 	refreshAllViews(): void {
 		for (const leaf of this.app.workspace.getLeavesOfType(MINDMAP_VIEW_TYPE)) {
 			const view = leaf.view;
