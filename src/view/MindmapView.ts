@@ -75,6 +75,7 @@ import {
 } from "./math.ts";
 import type { Direction, DropMode, MapController } from "./interactions.ts";
 import { resolveIndentUnit } from "../settings.ts";
+import type { LayoutMode } from "../settings.ts";
 import type MindmapPlugin from "../main.ts";
 
 export const MINDMAP_VIEW_TYPE = "mdmap-mode-view";
@@ -318,6 +319,10 @@ export class MindmapView extends TextFileView implements MapController {
 
 	private undoStack: string[] = [];
 	private redoStack: string[] = [];
+	private layoutButtons = new Map<LayoutMode, HTMLElement>();
+	private undoButton: HTMLElement | null = null;
+	private redoButton: HTMLElement | null = null;
+	private lockButton: HTMLElement | null = null;
 
 	private search: SearchBar | null = null;
 	/** Kept when the bar closes, dropped when the file changes. */
@@ -527,6 +532,7 @@ export class MindmapView extends TextFileView implements MapController {
 			// so typing can never collapse the tree out from under the user.
 			this.foldSeedPending = true;
 		}
+		this.updateActionButtons();
 		this.render("setViewData");
 	}
 
@@ -546,6 +552,9 @@ export class MindmapView extends TextFileView implements MapController {
 		this.collapsedKeys.clear();
 		this.selectionKey = null;
 		this.restoreFocusKey = null;
+		this.undoStack = [];
+		this.redoStack = [];
+		this.updateActionButtons();
 		this.paintToken++;
 		this.closePopover();
 		// The dialog holds line ranges from the file being cleared; leaving it up
@@ -668,6 +677,7 @@ export class MindmapView extends TextFileView implements MapController {
 		clearMathCache();
 		if (this.scope) this.bindScope(this.scope);
 		this.canvas.setOptions({ wheel: this.plugin.settings.wheel });
+		this.updateActionButtons();
 		this.render("settings");
 	}
 
@@ -690,6 +700,7 @@ export class MindmapView extends TextFileView implements MapController {
 	 */
 	private buildToolbar(): void {
 		const bars = this.contentEl.createDiv({ cls: "mm-toolbars" });
+		const actions = bars.createDiv({ cls: ["mm-toolbar", "mm-toolbar-actions"] });
 		const exports = bars.createDiv({ cls: ["mm-toolbar", "mm-toolbar-export"] });
 		const camera = bars.createDiv({ cls: ["mm-toolbar", "mm-toolbar-camera"] });
 
@@ -699,7 +710,7 @@ export class MindmapView extends TextFileView implements MapController {
 			label: string,
 			onClick: () => void,
 		): HTMLElement => {
-			const el = bar.createDiv({ cls: "mm-tool", attr: { "aria-label": label } });
+			const el = bar.createDiv({ cls: "mm-tool", attr: { "aria-label": label, title: label } });
 			setIcon(el, icon);
 			el.addEventListener("click", (ev) => {
 				ev.preventDefault();
@@ -707,6 +718,17 @@ export class MindmapView extends TextFileView implements MapController {
 			});
 			return el;
 		};
+
+		this.layoutButtons.set("right", button(actions, "list-tree", "Branches on the right", () => this.plugin.setLayout("right")));
+		this.layoutButtons.set("balanced", button(actions, "network", "Branches on both sides", () => this.plugin.setLayout("balanced")));
+		this.undoButton = button(actions, "undo-2", "Undo", () => {
+			if (!this.isLocked() && this.undoStack.length > 0) this.undo();
+		});
+		this.redoButton = button(actions, "redo-2", "Redo", () => {
+			if (!this.isLocked() && this.redoStack.length > 0) this.redo();
+		});
+		this.lockButton = button(actions, "lock", "Unlock editing", () => this.plugin.setLocked(!this.isLocked()));
+		this.updateActionButtons();
 
 		// The same four entries the palette and the tab menu are built from, in
 		// the same order and under the same names: three places offering the
@@ -723,6 +745,32 @@ export class MindmapView extends TextFileView implements MapController {
 		button(camera, "chevrons-down-up", "Collapse all", () => this.collapseAll());
 		button(camera, "search", "Find in the map", () => this.openSearch());
 		button(camera, "help-circle", "Keyboard shortcuts", () => this.showShortcuts());
+	}
+
+	private updateActionButtons(): void {
+		const locked = this.isLocked();
+		this.contentEl.toggleClass("is-locked", locked);
+		for (const [mode, button] of this.layoutButtons) {
+			const active = this.plugin.settings.layout === mode;
+			button.toggleClass("is-active", active);
+			button.setAttribute("aria-pressed", String(active));
+		}
+		for (const [button, disabled] of [
+			[this.undoButton, locked || this.undoStack.length === 0],
+			[this.redoButton, locked || this.redoStack.length === 0],
+		] as const) {
+			if (!button) continue;
+			button.toggleClass("is-disabled", disabled);
+			button.setAttribute("aria-disabled", String(disabled));
+		}
+		if (this.lockButton) {
+			const label = locked ? "Unlock editing" : "Lock editing";
+			setIcon(this.lockButton, locked ? "lock" : "lock-open");
+			this.lockButton.setAttribute("aria-label", label);
+			this.lockButton.setAttribute("title", label);
+			this.lockButton.toggleClass("is-active", locked);
+			this.lockButton.setAttribute("aria-pressed", String(locked));
+		}
 	}
 
 	/**
@@ -1159,7 +1207,7 @@ export class MindmapView extends TextFileView implements MapController {
 				branchColors: s.branchColors,
 				preformatted: isBody && looksPreformatted(node.text),
 				expandable: isBody,
-				addable: !isBody,
+				addable: !isBody && !s.locked,
 				collapsed,
 				hasChildren: this.childCount(node, showBody) > 0,
 				hiddenCount: collapsed ? this.hiddenCount(node, showBody) : 0,
@@ -1720,7 +1768,7 @@ export class MindmapView extends TextFileView implements MapController {
 	// --- mutation plumbing ----------------------------------------------------
 
 	private apply(mutation: Mutation, edit = false): void {
-		if (!mutation.ok) return;
+		if (this.isLocked() || !mutation.ok) return;
 		// A drop onto the position a node already holds rewrites it to exactly what
 		// it was. Nothing changed, so it earns neither an undo step nor a save.
 		if (mutation.text === this.data) return;
@@ -1731,9 +1779,11 @@ export class MindmapView extends TextFileView implements MapController {
 	}
 
 	private commit(text: string, focusLine: number, edit: boolean): void {
+		if (this.isLocked()) return;
 		this.data = text;
 		this.pendingFocus = focusLine >= 0 ? { line: focusLine, edit } : null;
 		this.requestSave();
+		this.updateActionButtons();
 		this.render("edit");
 	}
 
@@ -1748,6 +1798,10 @@ export class MindmapView extends TextFileView implements MapController {
 
 	isEditing(): boolean {
 		return this.editingId !== null;
+	}
+
+	isLocked(): boolean {
+		return this.plugin.settings.locked;
 	}
 
 	selectedId(): string | null {
@@ -1772,6 +1826,7 @@ export class MindmapView extends TextFileView implements MapController {
 	}
 
 	beginEdit(id: string): void {
+		if (this.isLocked()) return;
 		// Body cards hold lines the note owns, not a node title. Editing one means
 		// the block editor, which rewrites exactly those lines and nothing else.
 		if (this.bodyNodes.has(id)) {
@@ -1857,6 +1912,7 @@ export class MindmapView extends TextFileView implements MapController {
 	}
 
 	addChildTo(id: string): void {
+		if (this.isLocked()) return;
 		this.withNode(id, (parsed, node) => {
 			this.collapsedKeys.delete(node.key);
 			this.apply(addChild(parsed, node, ""), true);
@@ -1919,6 +1975,7 @@ export class MindmapView extends TextFileView implements MapController {
 
 	/** Whether the commands have a selection with somewhere to move it. */
 	canMoveSelection(direction: "up" | "down"): boolean {
+		if (this.isLocked()) return false;
 		const node = this.selectedNode();
 		if (!node) return false;
 		return direction === "up" ? canReorderUp(node) : canReorderDown(node);
@@ -1955,6 +2012,7 @@ export class MindmapView extends TextFileView implements MapController {
 	}
 
 	canDrop(id: string, targetId: string, mode: DropMode): boolean {
+		if (this.isLocked()) return false;
 		const node = this.parsed?.byId.get(id);
 		const target = this.parsed?.byId.get(targetId);
 		if (!node || !target) return false;
@@ -1962,6 +2020,7 @@ export class MindmapView extends TextFileView implements MapController {
 	}
 
 	move(id: string, targetId: string, mode: DropMode): void {
+		if (this.isLocked()) return;
 		const parsed = this.parsed;
 		const node = parsed?.byId.get(id);
 		const target = parsed?.byId.get(targetId);
@@ -2010,6 +2069,26 @@ export class MindmapView extends TextFileView implements MapController {
 
 	showMenu(id: string, ev: MouseEvent): void {
 		const menu = new Menu();
+		if (this.isLocked()) {
+			if (this.bodyNodes.has(id)) {
+				menu.addItem((item) => item
+					.setTitle("Show the whole block")
+					.setIcon("maximize-2")
+					.onClick(() => this.expandBody(id)));
+			} else {
+				const node = this.parsed?.byId.get(id);
+				if (!node) return;
+				this.select(id);
+				if (this.childCount(node, this.plugin.settings.showBodyNodes) > 0) {
+					menu.addItem((item) => item
+						.setTitle(this.collapsedKeys.has(node.key) ? "Unfold" : "Fold")
+						.setIcon("chevrons-down-up")
+						.onClick(() => this.toggleFold(id)));
+				}
+			}
+			menu.showAtMouseEvent(ev);
+			return;
+		}
 
 		// A content card stands for lines the note owns: it can be read and
 		// edited, but never renamed, moved or given children.
@@ -2168,6 +2247,7 @@ export class MindmapView extends TextFileView implements MapController {
 	}
 
 	undo(): void {
+		if (this.isLocked()) return;
 		const previous = this.undoStack.pop();
 		if (previous === undefined) {
 			new Notice("Nothing to undo on the map.");
@@ -2178,6 +2258,7 @@ export class MindmapView extends TextFileView implements MapController {
 	}
 
 	redo(): void {
+		if (this.isLocked()) return;
 		const next = this.redoStack.pop();
 		if (next === undefined) return;
 		this.undoStack.push(this.data);
@@ -2472,6 +2553,7 @@ export class MindmapView extends TextFileView implements MapController {
 
 	/** Edit the annotation independently of the title and other body content. */
 	editAnnotation(id: string): void {
+		if (this.isLocked()) return;
 		const parsed = this.parsed;
 		const node = parsed?.byId.get(id);
 		if (!parsed || !node || node.virtual || !this.plugin.settings.inlineAnnotations) return;
@@ -2480,6 +2562,7 @@ export class MindmapView extends TextFileView implements MapController {
 		const original = annotationText(parsed, node);
 		const key = node.key;
 		this.dialog = new AnnotationDialog(this.app, node.text, original, (text) => {
+			if (this.isLocked()) return false;
 			const snapshot = parseMarkdown(this.data, this.parseOptions());
 			const current = snapshot.byKey.get(key);
 			if (!this.plugin.settings.inlineAnnotations || !current || annotationText(snapshot, current) !== original) {
@@ -2529,7 +2612,8 @@ export class MindmapView extends TextFileView implements MapController {
 			title: node.text || "Note content",
 			sourcePath: this.file?.path ?? "",
 			blocks,
-			mode,
+			mode: this.isLocked() ? "read" : mode,
+			readonly: this.isLocked(),
 			onSave: (edits) => this.saveBody(key, edits),
 			onClosed: () => {
 				this.dialog = null;
@@ -2553,6 +2637,7 @@ export class MindmapView extends TextFileView implements MapController {
 	 * rather than held across the change.
 	 */
 	private saveBody(key: string, edits: Array<{ index: number; text: string }>): void {
+		if (this.isLocked()) return;
 		const before = this.data;
 		let text = this.data;
 
