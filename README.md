@@ -56,10 +56,13 @@ Five controls above the export buttons let you place branches **all on the right
 or **on both sides**, **undo** or **redo** Markdown edits, and **lock/unlock**
 editing. The lock is on by default and its state is saved with the plugin settings.
 
-While locked, the map can still be panned, zoomed, searched and folded, and links
-can still be opened. Editing, dragging nodes, changing the layout and undo/redo
-are disabled until unlocked. Layout changes are not part of the Markdown undo
-history.
+While locked, the map can still be panned, zoomed, searched and folded, links
+can still be opened, and the right-side/balanced layout buttons remain available.
+Editing, dragging nodes and undo/redo are disabled until unlocked. Layout changes
+are not part of the Markdown undo history.
+
+On Obsidian mobile, swiping within the map is reserved for map gestures and
+does not open the side drawers or trigger the pull-down Quick Action.
 
 ## Editing on the map
 
