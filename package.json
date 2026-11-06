@@ -1,5 +1,5 @@
 {
-  "name": "obsidian-mindmap-mode",
+  "name": "mdmap-mode",
   "version": "1.1.2",
   "description": "Toggle any note into an editable, radial mind map in the same tab. Every edit writes straight back to the original note, and no new files are ever created.",
   "type": "module",
@@ -21,16 +21,16 @@
     "mind-map",
     "outline"
   ],
-  "author": "PHANTOM-Nw",
+  "author": "edward9s",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/PHANTOM-Nw/obsidian-mindmap-mode.git"
+    "url": "git+https://github.com/edward9s/mdmap-mode.git"
   },
   "bugs": {
-    "url": "https://github.com/PHANTOM-Nw/obsidian-mindmap-mode/issues"
+    "url": "https://github.com/edward9s/mdmap-mode/issues"
   },
-  "homepage": "https://github.com/PHANTOM-Nw/obsidian-mindmap-mode#readme",
+  "homepage": "https://github.com/edward9s/mdmap-mode#readme",
   "devDependencies": {
     "@types/node": "^24.3.0",
     "esbuild": "^0.28.1",
