@@ -1,6 +1,8 @@
-# Mindmap Mode
+# mdmap mode
 
-*[中文说明](README.zh.md)*
+*[繁體中文說明](README.zh.md)*
+
+> This is a modified fork of [Mindmap Mode](https://github.com/PHANTOM-Nw/obsidian-mindmap-mode), originally developed by PHANTOM-Nw. The original MIT license and copyright notice are retained.
 
 Turn any Obsidian note into an editable, radial mind map — the same way you
 switch to reading mode. Same tab, same file, **no new files ever created**.
@@ -79,7 +81,7 @@ reading.
 | Wheel / pinch | Zoom; drag blank space to pan |
 | Toolbar | Zoom, fit, centre, **expand all**, **collapse all**, **find**, shortcut help |
 
-Every key in that table is a default. **Settings → Mindmap Mode → Shortcuts**
+Every key in that table is a default. **Settings → mdmap mode → Shortcuts**
 lists each one with what it does, records a new key for it, clears it, or puts
 the default back — and warns when two actions end up on the same key. Open maps
 follow a change straight away, and the map's own shortcut help, behind the **?**
@@ -247,17 +249,17 @@ npm run build
 Then copy `main.js`, `manifest.json` and `styles.css` into your vault:
 
 ```bash
-mkdir -p /path/to/vault/.obsidian/plugins/mindmap-mode
-cp main.js manifest.json styles.css /path/to/vault/.obsidian/plugins/mindmap-mode/
+mkdir -p /path/to/vault/.obsidian/plugins/mdmap-mode
+cp main.js manifest.json styles.css /path/to/vault/.obsidian/plugins/mdmap-mode/
 ```
 
-Enable **Mindmap Mode** in *Settings → Community plugins*.
+Enable **mdmap mode** in *Settings → Community plugins*.
 
 For development, symlink the repo instead so `npm run dev` rebuilds in place,
 then use *Reload app without saving* (or the Hot-Reload plugin) to pick up changes:
 
 ```bash
-ln -s "$PWD" /path/to/vault/.obsidian/plugins/mindmap-mode
+ln -s "$PWD" /path/to/vault/.obsidian/plugins/mdmap-mode
 npm run dev
 ```
 
