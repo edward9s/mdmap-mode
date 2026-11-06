@@ -193,3 +193,15 @@ test("renaming a note keeps its saved camera position", () => {
 	const renamed = renameNote(state, "a.md", "b.md");
 	assert.deepEqual(renamed["b.md"].camera, { centreX: 22, centreY: 33, scale: 1.2 });
 });
+
+test("a camera-only record remains distinguishable from a saved fully expanded map", () => {
+	const entry = {
+		collapsed: [],
+		camera: { centreX: 140, centreY: 230, scale: 1.4 },
+		hasFoldState: false as const,
+	};
+	const saved = putNoteState({}, "a.md", entry, 10);
+	assert.equal(readStore(saved)["a.md"].hasFoldState, false);
+	const explicitExpansion = putNoteState(saved, "a.md", { collapsed: [], camera: entry.camera }, 11);
+	assert.equal(explicitExpansion["a.md"].hasFoldState, undefined);
+});
