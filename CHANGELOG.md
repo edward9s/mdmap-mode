@@ -11,6 +11,13 @@ line. The `<br>` is deliberate — a plain newline renders as a line break in
 release notes but collapses to a space when this file is viewed on GitHub, and
 the entry has to read correctly in both.
 
+## [1.2.1] - 2026-11-06
+
+### 修正 / Fixed
+
+- 鎖定編輯時仍可切換向右或左右布局，編輯與復原／重做仍受鎖定保護。<br>The right-side and balanced layouts remain available while editing is locked; note edits and undo/redo remain protected.
+- 在行動版滑動心智圖時，不再觸發 Obsidian 的左右側欄與下拉快速動作。<br>Swipes inside the mind map no longer trigger Obsidian mobile side drawers or the pull-down Quick Action.
+
 ## [1.2.0] - 2026-11-06
 
 ### 新增 / Added
