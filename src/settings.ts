@@ -63,7 +63,7 @@ export const DEFAULT_SETTINGS: MindmapSettings = {
 	source: "headings-and-lists",
 	maxHeadingDepth: 6,
 	rootPolicy: "auto",
-	layout: "balanced",
+	layout: "right",
 	indentUnit: "auto",
 	wheel: "zoom",
 	locked: true,
