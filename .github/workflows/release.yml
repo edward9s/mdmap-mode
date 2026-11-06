@@ -72,7 +72,7 @@ jobs:
         run: |
           mkdir -p dist/mdmap-mode
           cp main.js manifest.json styles.css LICENSE dist/mdmap-mode/
-          (cd dist && zip -r mdmap-mode.zip mindmap-mode)
+          (cd dist && zip -r mdmap-mode.zip mdmap-mode)
 
       - name: Attest the build provenance
         uses: actions/attest-build-provenance@v2
@@ -112,7 +112,7 @@ jobs:
           \`\`\`
 
           接著在 *設定 → 社群外掛* 中啟用 **mdmap mode**。
-          （也可以下載 \`mdmap-mode.zip\`，解壓縮至 \`.obsidian/plugins/\` ，即可完成安裝。）
+          （也可以下載 \`mdmap-mode.zip\`，解壓縮至 \`.obsidian/plugins/\`，即可完成安裝。）
 
           **BRAT：** 將 \`$REPO\` 加入為測試版外掛。
 
