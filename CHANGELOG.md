@@ -11,6 +11,18 @@ line. The `<br>` is deliberate — a plain newline renders as a line break in
 release notes but collapses to a space when this file is viewed on GitHub, and
 the entry has to read correctly in both.
 
+## [1.2.2] - 2026-11-06
+
+### 修正 / Fixed
+
+- 行動版滑動手勢：將 Obsidian 的 `data-ignore-swipe` 設為明確的 `true`，並阻止畫布觸控事件向外傳遞，修正前一版仍會開啟側欄或下拉指令的問題。<br>Corrected the mobile swipe opt-out to an explicit `true` value and contained canvas touch events, addressing drawer and Quick Action triggers observed after 1.2.1.
+- 鎖定時可從節點文字卡片拖曳平移；點按連結與折疊按鈕仍正常。<br>Allow panning from node cards while locked without sacrificing taps on links and fold controls.
+- 行動版右下工具列上移，避開 Android 導覽列與安全區域。<br>Raise the mobile action toolbar above Android navigation and safe-area insets.
+
+### 新增 / Added
+
+- 儲存各筆記的心智圖中心位置與縮放倍率，下次開啟時還原，資料存放於外掛設定。<br>Remember the camera centre and zoom per note in plugin data and restore them on reopening.
+
 ## [1.2.1] - 2026-11-06
 
 ### 修正 / Fixed
