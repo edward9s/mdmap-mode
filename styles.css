@@ -781,6 +781,16 @@
 	color: var(--text-on-accent);
 }
 
+.mm-tool.is-disabled {
+	opacity: 0.35;
+	cursor: default;
+	pointer-events: none;
+}
+
+.mdmap-mode.is-locked .mm-checkbox {
+	pointer-events: none;
+}
+
 /* --- search --------------------------------------------------------------- */
 
 /* Above the toolbar (10) and below the popovers and the block dialog (20): the
