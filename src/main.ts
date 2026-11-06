@@ -21,7 +21,7 @@ import {
 	versionToRecord,
 } from "./updateNotice.ts";
 
-const HEADER_BUTTON_CLASS = "mindmap-mode-toggle";
+const HEADER_BUTTON_CLASS = "mdmap-mode-toggle";
 
 /** Where the fold store sits in `data.json`, beside the flat settings. */
 const FOLD_STATE_KEY = "foldState";
