@@ -61,8 +61,17 @@ can still be opened, and the right-side/balanced layout buttons remain available
 Editing, dragging nodes and undo/redo are disabled until unlocked. Layout changes
 are not part of the Markdown undo history.
 
-On Obsidian mobile, swiping within the map is reserved for map gestures and
-does not open the side drawers or trigger the pull-down Quick Action.
+On Obsidian mobile, the map marks its gesture surface as swipe-ignored and
+contains touch events to prevent Obsidian's drawer and Quick Action gestures.
+Android's own system-edge navigation gestures remain controlled by Android.
+
+When editing is locked, you can start panning from a node card or its text,
+not only from empty canvas space. A simple tap still activates links and fold
+buttons.
+
+The plugin remembers each note's map-centre position and zoom in its own
+`data.json`. Reopening the note restores this view instead of fitting the
+whole map again. The view is independent of the note's fold-state option.
 
 ## Editing on the map
 

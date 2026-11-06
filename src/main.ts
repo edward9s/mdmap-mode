@@ -13,7 +13,7 @@ import {
 	renameFolder,
 	renameNote,
 } from "./foldStore.ts";
-import type { FoldStore, NoteViewEntry, NoteViewState } from "./foldStore.ts";
+import type { CameraState, FoldStore, NoteViewEntry, NoteViewState } from "./foldStore.ts";
 import {
 	UPDATE_NOTICE,
 	UPDATE_NOTICE_MS,
@@ -96,7 +96,7 @@ export default class MindmapPlugin extends Plugin {
 				const path = view?.file?.path;
 				if (!view || !path) return false;
 				if (!checking) {
-					this.forgetNoteState(path);
+					this.forgetFoldState(path);
 					view.resetFolds();
 				}
 				return true;
@@ -292,18 +292,55 @@ export default class MindmapPlugin extends Plugin {
 	/** What a note was left looking like, or null when nothing is remembered. */
 	readNoteState(path: string): NoteViewState | null {
 		if (!this.settings.rememberFolds) return null;
-		return this.foldStore[path] ?? null;
+		const entry = this.foldStore[path];
+		return entry?.hasFoldState === false ? null : entry ?? null;
 	}
 
 	writeNoteState(path: string, entry: NoteViewEntry): void {
 		if (!this.settings.rememberFolds) return;
-		this.updateStore(putNoteState(this.foldStore, path, entry, Date.now()));
+		// A fold or selection change must not erase the independent camera state.
+		this.updateStore(putNoteState(this.foldStore, path, {
+			...entry,
+			camera: this.foldStore[path]?.camera,
+		}, Date.now()));
 	}
 
-	/**
-	 * Deliberately not gated on `rememberFolds`: the command has to be able to
-	 * clear a stale entry left behind by a session where the setting was on.
-	 */
+	readCameraState(path: string): CameraState | null {
+		return this.foldStore[path]?.camera ?? null;
+	}
+
+	writeCameraState(path: string, camera: CameraState): void {
+		const old = this.foldStore[path];
+		if (old?.camera &&
+			old.camera.centreX === camera.centreX &&
+			old.camera.centreY === camera.centreY &&
+			old.camera.scale === camera.scale) return;
+		this.updateStore(putNoteState(this.foldStore, path, {
+			collapsed: old?.collapsed ?? [],
+			focusKey: old?.focusKey,
+			focusId: old?.focusId,
+			camera,
+			hasFoldState: old ? old.hasFoldState : false,
+		}, Date.now()));
+	}
+
+	/** Reset fold/focus without discarding this note's camera. */
+	forgetFoldState(path: string): void {
+		const entry = this.foldStore[path];
+		if (!entry) return;
+		if (!entry.camera) {
+			this.updateStore(forgetNote(this.foldStore, path));
+			return;
+		}
+		if (entry.hasFoldState === false) return;
+		this.updateStore(putNoteState(this.foldStore, path, {
+			collapsed: [],
+			camera: entry.camera,
+			hasFoldState: false,
+		}, Date.now()));
+	}
+
+	/** Drop all view state when the note itself is deleted. */
 	forgetNoteState(path: string): void {
 		this.updateStore(forgetNote(this.foldStore, path));
 	}

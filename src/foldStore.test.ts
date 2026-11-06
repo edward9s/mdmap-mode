@@ -162,3 +162,46 @@ test("renaming a folder holding nothing remembered changes nothing", () => {
 	const store = putNoteState({}, "Notes/a.md", { collapsed: [] }, 1);
 	assert.equal(renameFolder(store, "Archive", "Attic"), store);
 });
+
+test("camera centre and zoom round-trip without changing the note structure", () => {
+	const camera = { centreX: 412, centreY: -38, scale: 1.75 };
+	const state = putNoteState({}, "Notes/map.md", { collapsed: [], camera }, 123);
+	assert.deepEqual(readStore(state)["Notes/map.md"].camera, camera);
+	camera.centreX = 999;
+	assert.equal(state["Notes/map.md"].camera?.centreX, 412);
+});
+
+test("invalid camera coordinates are rejected while valid fold state remains", () => {
+	for (const camera of [
+		{ centreX: Number.NaN, centreY: 2, scale: 1 },
+		{ centreX: 1, centreY: Infinity, scale: 1 },
+		{ centreX: 1, centreY: 2, scale: 0 },
+		{ centreX: 1, centreY: 2, scale: "bad" },
+	]) {
+		const state = readStore({ "a.md": { collapsed: ["h:a"], at: 12, camera } });
+		assert.deepEqual(state["a.md"], { collapsed: ["h:a"], at: 12 });
+	}
+});
+
+test("renaming a note keeps its saved camera position", () => {
+	const state = putNoteState({}, "a.md", {
+		collapsed: ["h:a"],
+		camera: { centreX: 22, centreY: 33, scale: 1.2 },
+	}, 9);
+	const moved = renameNote(state, "new.md", "updated.md");
+	assert.equal(moved, state);
+	const renamed = renameNote(state, "a.md", "b.md");
+	assert.deepEqual(renamed["b.md"].camera, { centreX: 22, centreY: 33, scale: 1.2 });
+});
+
+test("a camera-only record remains distinguishable from a saved fully expanded map", () => {
+	const entry = {
+		collapsed: [],
+		camera: { centreX: 140, centreY: 230, scale: 1.4 },
+		hasFoldState: false as const,
+	};
+	const saved = putNoteState({}, "a.md", entry, 10);
+	assert.equal(readStore(saved)["a.md"].hasFoldState, false);
+	const explicitExpansion = putNoteState(saved, "a.md", { collapsed: [], camera: entry.camera }, 11);
+	assert.equal(explicitExpansion["a.md"].hasFoldState, undefined);
+});

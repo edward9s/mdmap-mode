@@ -791,6 +791,12 @@
 	pointer-events: none;
 }
 
+/* Obsidian Android can overlay its navigation controls on the workspace.
+   Keep the full action stack above them, including the system safe area. */
+body.is-mobile .mdmap-mode .mm-toolbars {
+	bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+}
+
 /* --- search --------------------------------------------------------------- */
 
 /* Above the toolbar (10) and below the popovers and the block dialog (20): the
