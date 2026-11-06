@@ -77,7 +77,7 @@ import type { Direction, DropMode, MapController } from "./interactions.ts";
 import { resolveIndentUnit } from "../settings.ts";
 import type MindmapPlugin from "../main.ts";
 
-export const MINDMAP_VIEW_TYPE = "mindmap-mode-view";
+export const MINDMAP_VIEW_TYPE = "mdmap-mode-view";
 
 const UNDO_LIMIT = 100;
 
@@ -374,7 +374,7 @@ export class MindmapView extends TextFileView implements MapController {
 		this.plugin = plugin;
 		this.perf.enabled = plugin.settings.debugTiming;
 
-		this.contentEl.addClass("mindmap-mode");
+		this.contentEl.addClass("mdmap-mode");
 		this.canvas = new Canvas(this.contentEl, {
 			wheel: plugin.settings.wheel,
 			// Only blank space starts a pan; everything a node owns belongs to the
