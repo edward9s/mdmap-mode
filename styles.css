@@ -1,10 +1,10 @@
 /* ==========================================================================
-   Mindmap Mode
+   mdmap mode
    Everything is driven by Obsidian's own CSS variables so the map follows the
    active theme, light or dark, without a second palette to maintain.
    ========================================================================== */
 
-.mindmap-mode {
+.mdmap-mode {
 	--mm-b0: #4f9df7;
 	--mm-b1: #f2994a;
 	--mm-b2: #56c271;
@@ -473,8 +473,8 @@
    and styles those containers at up to (0,3,1). Matching them by class through
    the map's ancestor chain scores (0,4,0) and (0,5,0), so a formula stays inline
    in its card without reaching for !important. */
-.mindmap-mode .mm-text .mm-math .MathJax,
-.mindmap-mode .mm-text .mm-math .MathJax[display="true"] {
+.mdmap-mode .mm-text .mm-math .MathJax,
+.mdmap-mode .mm-text .mm-math .MathJax[display="true"] {
 	display: inline-block;
 	margin: 0;
 	padding: 0;
@@ -871,9 +871,9 @@
 
 /* --- the block dialog ----------------------------------------------------- */
 
-/* A modal, not a popover: `.mindmap-mode` is `overflow: hidden`, so a panel big
+/* A modal, not a popover: `.mdmap-mode` is `overflow: hidden`, so a panel big
    enough to read a long block would be clipped by the viewport it hangs in.
-   It also mounts outside `.mindmap-mode`, which is why none of the map's own
+   It also mounts outside `.mdmap-mode`, which is why none of the map's own
    scoped rules -- the `.mm-text .mm-math` display override in particular --
    reach the rendered markdown in here. */
 .mm-block-dialog {
@@ -968,7 +968,7 @@
 /* --- the Shortcuts group in the settings tab ------------------------------ */
 
 /* Mounted in Obsidian's own settings window, so these are the only rules in
-   this file that live outside `.mindmap-mode`. */
+   this file that live outside `.mdmap-mode`. */
 
 .mm-shortcut-keys {
 	display: flex;
