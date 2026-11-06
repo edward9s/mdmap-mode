@@ -5,8 +5,10 @@ import process from "node:process";
 import { builtinModules } from "node:module";
 
 const banner = `/*
-Mindmap Mode — https://github.com/PHANTOM-Nw/obsidian-mindmap-mode
+mdmap mode — https://github.com/edward9s/mdmap-mode
+Based on Mindmap Mode — https://github.com/PHANTOM-Nw/obsidian-mindmap-mode
 Copyright (c) 2026 PHANTOM-Nw. MIT licensed.
+Modifications Copyright (c) 2026 edward9s.
 
 This is a generated file. Source lives in src/.
 */
