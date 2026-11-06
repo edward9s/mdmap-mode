@@ -30,7 +30,7 @@ export interface UpdateNotice {
 export const UPDATE_NOTICE: UpdateNotice = {
 	version: "1.1.2",
 	text:
-		"Mindmap Mode 1.1.2 fixes two things: an open map now follows edits made"
+		"mdmap mode 1.1.2 fixes two things: an open map now follows edits made"
 		+ " to the note outside it (another pane, sync, an external editor), and"
 		+ " a link in a heading, list item, task item or the root card opens on"
 		+ " click.",
