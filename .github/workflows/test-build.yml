@@ -1,0 +1,83 @@
+name: Test Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# A single release and tag are updated in place; builds must not race.
+concurrency:
+  group: mdmap-mode-test-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    name: Test, build and update release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate, test and build
+        run: npm run check
+
+      - name: Package the Obsidian plugin
+        run: |
+          set -euo pipefail
+          for file in main.js manifest.json styles.css LICENSE; do
+            test -s "$file" || { echo "::error::$file is missing or empty"; exit 1; }
+          done
+          mkdir -p dist/mdmap-mode
+          cp main.js manifest.json styles.css LICENSE dist/mdmap-mode/
+          (cd dist && zip -r mdmap-mode-test.zip mdmap-mode)
+
+      - name: Update test-build prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="test-build"
+          short_sha=$(git rev-parse --short=7 HEAD)
+          cat > test-release-notes.md <<EOF
+          Rolling test build from the latest validated `main` commit.
+
+          Commit: [${GITHUB_SHA}](https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})
+
+          Download **mdmap-mode-test.zip** and extract its `mdmap-mode` folder
+          into `<vault>/.obsidian/plugins/`. Restart Obsidian or reload the plugin.
+
+          This is a testing prerelease. The files are replaced by the next
+          successful build of `main`; failed builds keep the previous release.
+          EOF
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            # Keep the release URL constant while its tag follows the built commit.
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/$tag" \
+              -f sha="$GITHUB_SHA" -F force=true >/dev/null
+            gh release upload "$tag" \
+              main.js manifest.json styles.css LICENSE dist/mdmap-mode-test.zip \
+              --clobber
+            gh release edit "$tag" \
+              --title "Test Build (main @ $short_sha)" \
+              --notes-file test-release-notes.md \
+              --prerelease --latest=false
+          else
+            gh release create "$tag" \
+              --target "$GITHUB_SHA" \
+              --title "Test Build (main @ $short_sha)" \
+              --notes-file test-release-notes.md \
+              --prerelease --latest=false \
+              main.js manifest.json styles.css LICENSE dist/mdmap-mode-test.zip
+          fi
+
+          echo "Test build: https://github.com/$GITHUB_REPOSITORY/releases/tag/$tag" >> "$GITHUB_STEP_SUMMARY"

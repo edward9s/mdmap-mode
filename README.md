@@ -248,6 +248,21 @@ file already has.
 
 ## Install
 
+### Test build from GitHub Releases
+
+The [rolling Test Build](https://github.com/edward9s/mdmap-mode/releases/tag/test-build)
+is updated **only when you manually run** Actions → Test Build → Run workflow
+on `main`, after tests and typechecking pass.
+Download **mdmap-mode-test.zip** and extract its `mdmap-mode` folder into
+`<vault>/.obsidian/plugins/`. Enable **mdmap mode** in Obsidian's Community
+plugins settings, or reload the plugin if it is already installed.
+
+Each successful build replaces the files in the same test release. Updating an
+installed copy is currently **manual**: download and replace the plugin files.
+The rolling test tag is not an Obsidian-compatible versioned release tag.
+
+### Build locally
+
 Not in the community plugin browser yet, so install manually:
 
 ```bash
