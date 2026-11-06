@@ -38,6 +38,7 @@ export interface MindmapSettings {
 	indentUnit: "auto" | "two" | "four" | "tab";
 	wheel: WheelMode;
 	locked: boolean;
+	extraToolsExpanded: boolean;
 	rememberFolds: boolean;
 	branchColors: boolean;
 	showBodyNodes: boolean;
@@ -67,6 +68,7 @@ export const DEFAULT_SETTINGS: MindmapSettings = {
 	indentUnit: "auto",
 	wheel: "zoom",
 	locked: true,
+	extraToolsExpanded: false,
 	rememberFolds: true,
 	branchColors: true,
 	showBodyNodes: true,
