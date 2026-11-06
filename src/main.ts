@@ -4,7 +4,7 @@ import type { ViewState, WorkspaceLeaf } from "obsidian";
 import { MINDMAP_VIEW_TYPE, MindmapView } from "./view/MindmapView.ts";
 import { EXPORT_COMMANDS } from "./export/run.ts";
 import { DEFAULT_SETTINGS, MindmapSettingTab } from "./settings.ts";
-import type { MindmapSettings } from "./settings.ts";
+import type { LayoutMode, MindmapSettings } from "./settings.ts";
 import {
 	forgetFolder,
 	forgetNote,
@@ -306,6 +306,20 @@ export default class MindmapPlugin extends Plugin {
 	 */
 	forgetNoteState(path: string): void {
 		this.updateStore(forgetNote(this.foldStore, path));
+	}
+
+	setLayout(layout: LayoutMode): void {
+		if (this.settings.layout === layout) return;
+		this.settings.layout = layout;
+		this.refreshAllViews();
+		void this.saveSettings();
+	}
+
+	setLocked(locked: boolean): void {
+		if (this.settings.locked === locked) return;
+		this.settings.locked = locked;
+		this.refreshAllViews();
+		void this.saveSettings();
 	}
 
 	refreshAllViews(): void {
