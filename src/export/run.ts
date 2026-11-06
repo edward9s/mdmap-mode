@@ -141,7 +141,7 @@ export async function runExport(
 				: `Mind map exported to ${created.path}`,
 		);
 	} catch (error) {
-		console.error("Mindmap Mode: the export failed.", error);
+		console.error("mdmap mode: the export failed.", error);
 		const reason = error instanceof Error ? error.message : String(error);
 		new Notice(`Mind map export failed: ${reason}`);
 	}
