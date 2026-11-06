@@ -1,4 +1,5 @@
 import type { ViewMetrics } from "./culling.ts";
+import type { CameraState } from "../foldStore.ts";
 import { MotionFlag, SETTLE_MS } from "./motion.ts";
 
 export interface CanvasOptions {
@@ -13,10 +14,13 @@ export interface CanvasOptions {
 	 * frame that gets painted.
 	 */
 	onView?: () => void;
+	/** Called once after pan, pinch, wheel or camera framing settles. */
+	onSettled?: () => void;
 }
 
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 3;
+const PAN_THRESHOLD = 5;
 
 function clamp(value: number, min: number, max: number): number {
 	return Math.min(max, Math.max(min, value));
@@ -39,6 +43,9 @@ export class Canvas {
 	private opts: CanvasOptions;
 	private readonly pointers = new Map<number, { x: number; y: number }>();
 	private panning = false;
+	private panPointer: number | null = null;
+	private panStart = { x: 0, y: 0 };
+	private panMoved = false;
 	private last = { x: 0, y: 0 };
 	private pinchDistance = 0;
 	private viewFrame = 0;
@@ -68,7 +75,10 @@ export class Canvas {
 			this.content.toggleClass("mm-moving", moving);
 			// Camera at rest is the end of a gesture, wheel included: whatever the
 			// next one reads has to be read again.
-			if (!moving) this.rect = null;
+			if (!moving) {
+				this.rect = null;
+				this.opts.onSettled?.();
+			}
 		},
 		SETTLE_MS,
 		window,
@@ -96,6 +106,20 @@ export class Canvas {
 	}
 
 	private bind(): void {
+		// Obsidian mobile also observes touch gestures to open drawers and Quick
+		// Actions. Keep touch events inside this independent pan/zoom surface.
+		// Pointer Events still reach this canvas and the node interactions normally.
+		for (const event of ["touchstart", "touchmove", "touchend", "touchcancel"] as const) {
+			this.on(this.viewport, event, (ev) => ev.stopPropagation());
+		}
+		// Capturing a drag retargets its trailing click to the viewport. Swallow
+		// that click so panning a selected node does not clear its selection.
+		this.on(this.viewport, "click", (ev) => {
+			if (!this.panMoved) return;
+			this.panMoved = false;
+			ev.preventDefault();
+			ev.stopImmediatePropagation();
+		});
 		this.on(
 			this.viewport,
 			"wheel",
@@ -115,25 +139,25 @@ export class Canvas {
 		);
 
 		this.on(this.viewport, "pointerdown", (ev) => {
+			if (ev.button !== 0 && ev.button !== 1) return;
+			if (this.pointers.size === 0) this.panMoved = false;
 			this.pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
 
 			if (this.pointers.size === 2) {
+				this.panPointer = null;
 				this.panning = false;
+				this.viewport.removeClass("is-panning");
 				this.pinchDistance = this.spread();
 				return;
 			}
 			const target = ev.target as HTMLElement;
-			const middleClick = ev.button === 1;
-			if (!middleClick && !this.opts.canPan(target)) return;
+			if (ev.button !== 1 && !this.opts.canPan(target)) return;
 
-			this.panning = true;
-			// Deliberately not promoting the layer here: a press and hold that never
-			// pans would raise the flag, let it settle, and raise it again on the
-			// first frame that does move -- two re-rasters of the whole map for a
-			// gesture that had not started. The first `apply()` promotes.
-			this.last = { x: ev.clientX, y: ev.clientY };
-			this.viewport.addClass("is-panning");
-			this.viewport.setPointerCapture(ev.pointerId);
+			// Defer pointer capture and the panning CSS until an actual drag.
+			// A tap on a locked card must still activate its links, fold and copy.
+			this.panPointer = ev.pointerId;
+			this.panStart = { x: ev.clientX, y: ev.clientY };
+			this.last = this.panStart;
 		});
 
 		this.on(this.viewport, "pointermove", (ev) => {
@@ -149,7 +173,16 @@ export class Canvas {
 				this.pinchDistance = distance;
 				return;
 			}
-			if (!this.panning) return;
+			if (this.panPointer !== ev.pointerId) return;
+			if (!this.panning) {
+				const dx = ev.clientX - this.panStart.x;
+				const dy = ev.clientY - this.panStart.y;
+				if (Math.hypot(dx, dy) < PAN_THRESHOLD) return;
+				this.panning = true;
+				this.panMoved = true;
+				this.viewport.addClass("is-panning");
+				this.viewport.setPointerCapture(ev.pointerId);
+			}
 			this.tx += ev.clientX - this.last.x;
 			this.ty += ev.clientY - this.last.y;
 			this.last = { x: ev.clientX, y: ev.clientY };
@@ -160,7 +193,8 @@ export class Canvas {
 			this.pointers.delete(ev.pointerId);
 			this.rect = null;
 			if (this.pointers.size < 2) this.pinchDistance = 0;
-			if (this.panning && this.pointers.size === 0) {
+			if (ev.pointerId === this.panPointer || this.pointers.size === 0) {
+				this.panPointer = null;
 				this.panning = false;
 				this.viewport.removeClass("is-panning");
 			}
@@ -214,6 +248,30 @@ export class Canvas {
 		this.ty = py - (py - this.ty) * k;
 		this.scale = next;
 		this.apply();
+	}
+
+	/** Record the content-space point at the centre of this viewport. */
+	cameraState(): CameraState | null {
+		const rect = this.viewportRect();
+		if (rect.width <= 0 || rect.height <= 0 || !Number.isFinite(this.scale) || this.scale <= 0) {
+			return null;
+		}
+		return {
+			centreX: (rect.width / 2 - this.tx) / this.scale,
+			centreY: (rect.height / 2 - this.ty) / this.scale,
+			scale: this.scale,
+		};
+	}
+
+	/** Re-centre a saved view even when the pane's screen size has changed. */
+	restoreCamera(camera: CameraState): boolean {
+		const rect = this.viewportRect();
+		if (rect.width <= 0 || rect.height <= 0) return false;
+		this.scale = clamp(camera.scale, MIN_SCALE, MAX_SCALE);
+		this.tx = rect.width / 2 - camera.centreX * this.scale;
+		this.ty = rect.height / 2 - camera.centreY * this.scale;
+		this.apply();
+		return true;
 	}
 
 	zoomBy(factor: number): void {
@@ -316,5 +374,7 @@ export class Canvas {
 		for (const off of this.cleanups) off();
 		this.cleanups.length = 0;
 		this.pointers.clear();
+		this.panPointer = null;
+		this.panMoved = false;
 	}
 }
