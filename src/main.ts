@@ -292,7 +292,8 @@ export default class MindmapPlugin extends Plugin {
 	/** What a note was left looking like, or null when nothing is remembered. */
 	readNoteState(path: string): NoteViewState | null {
 		if (!this.settings.rememberFolds) return null;
-		return this.foldStore[path] ?? null;
+		const entry = this.foldStore[path];
+		return entry?.hasFoldState === false ? null : entry ?? null;
 	}
 
 	writeNoteState(path: string, entry: NoteViewEntry): void {
@@ -319,6 +320,7 @@ export default class MindmapPlugin extends Plugin {
 			focusKey: old?.focusKey,
 			focusId: old?.focusId,
 			camera,
+			hasFoldState: old ? old.hasFoldState : false,
 		}, Date.now()));
 	}
 
@@ -330,10 +332,11 @@ export default class MindmapPlugin extends Plugin {
 			this.updateStore(forgetNote(this.foldStore, path));
 			return;
 		}
-		if (entry.collapsed.length === 0 && !entry.focusKey && !entry.focusId) return;
+		if (entry.hasFoldState === false) return;
 		this.updateStore(putNoteState(this.foldStore, path, {
 			collapsed: [],
 			camera: entry.camera,
+			hasFoldState: false,
 		}, Date.now()));
 	}
 
