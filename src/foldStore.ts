@@ -38,6 +38,8 @@ export interface NoteViewState {
 	 */
 	focusId?: string;
 	camera?: CameraState;
+	/** False means this entry only remembers the camera, not an explicit fold shape. */
+	hasFoldState?: false;
 	/** Last touched, in ms. Only ever compared, never shown. */
 	at: number;
 }
@@ -72,6 +74,7 @@ function readEntry(value: unknown): NoteViewState | null {
 	};
 	if (typeof value.focusKey === "string") state.focusKey = value.focusKey;
 	if (typeof value.focusId === "string") state.focusId = value.focusId;
+	if (value.hasFoldState === false) state.hasFoldState = false;
 	if (isRecord(value.camera)) {
 		const { centreX, centreY, scale } = value.camera;
 		if (
@@ -135,6 +138,7 @@ export function putNoteState(
 	if (entry.focusKey !== undefined) state.focusKey = entry.focusKey;
 	if (entry.focusId !== undefined) state.focusId = entry.focusId;
 	if (entry.camera !== undefined) state.camera = { ...entry.camera };
+	if (entry.hasFoldState === false) state.hasFoldState = false;
 	return prune({ ...store, [path]: state });
 }
 
