@@ -15,6 +15,7 @@ export type DropMode = "child" | "before" | "after";
 export interface MapController {
 	canvas: Canvas;
 	isEditing(): boolean;
+	isLocked(): boolean;
 	selectedId(): string | null;
 	select(id: string | null): void;
 	beginEdit(id: string): void;
@@ -293,7 +294,7 @@ export function attachInteractions(controller: MapController): () => void {
 		// Before every early return below: a new press is a new gesture, and
 		// whatever the last drag left owing is owed no longer.
 		gate.pointerDown();
-		if (ev.button !== 0 || controller.isEditing()) return;
+		if (ev.button !== 0 || controller.isEditing() || controller.isLocked()) return;
 		const target = ev.target as HTMLElement;
 		if (target.closest(".mm-tools, .mm-checkbox")) return;
 		const card = target.closest<HTMLElement>(".mm-card");
