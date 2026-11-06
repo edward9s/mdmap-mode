@@ -11,6 +11,14 @@ line. The `<br>` is deliberate — a plain newline renders as a line break in
 release notes but collapses to a space when this file is viewed on GitHub, and
 the entry has to read correctly in both.
 
+## [1.2.3] - 2026-11-06
+
+### 調整 / Changed
+
+- 將三排工具列移至心智圖內容區上方，避開 Obsidian 原生標題列及手機底部浮動導覽列。<br>Moved all three map toolbars to the top of the map content, below Obsidian's native view header and away from the mobile bottom navigation.
+- 在鎖定按鈕右側新增展開／收合控制；下兩排工具列在每次開啟時預設隱藏，搜尋時暫時隱藏整組工具列以避免遮擋。<br>Added an expand/collapse control after Lock; the two lower toolbar rows start hidden, and all controls temporarily hide during search to avoid overlap.
+- 預設布局改為全部向右，保留使用者既有的布局設定。<br>Changed the default layout to right-sided while respecting existing saved layout preferences.
+
 ## [1.2.2] - 2026-11-06
 
 ### 修正 / Fixed

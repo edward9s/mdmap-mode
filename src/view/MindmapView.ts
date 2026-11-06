@@ -326,6 +326,9 @@ export class MindmapView extends TextFileView implements MapController {
 	private undoButton: HTMLElement | null = null;
 	private redoButton: HTMLElement | null = null;
 	private lockButton: HTMLElement | null = null;
+	private moreToolsButton: HTMLElement | null = null;
+	private extraToolbars: HTMLElement[] = [];
+	private extraToolsExpanded = false;
 
 	private search: SearchBar | null = null;
 	/** Kept when the bar closes, dropped when the file changes. */
@@ -706,20 +709,17 @@ export class MindmapView extends TextFileView implements MapController {
 	// --- toolbar --------------------------------------------------------------
 
 	/**
-	 * The corner of the map: the exports in a panel of their own, above the
-	 * panel holding the camera and the map.
-	 *
-	 * Two blocks rather than one crowded one, and the exports are the block that
-	 * sits on top: underneath is where the pointer has always found the zoom, so
-	 * the camera panel keeps the bottom edge. The column sits on `contentEl`,
-	 * outside `.mm-viewport` and so outside `.mm-content` -- which is what the
-	 * export clones, and the reason none of these buttons can end up in a file.
+	 * Three toolbar rows at the top of the map content, below Obsidian's view
+	 * header. Only the main controls are shown initially; the other two rows
+	 * expand on demand. Keeping them outside the canvas also excludes the
+	 * controls from exported map images.
 	 */
 	private buildToolbar(): void {
 		const bars = this.contentEl.createDiv({ cls: "mm-toolbars" });
 		const actions = bars.createDiv({ cls: ["mm-toolbar", "mm-toolbar-actions"] });
 		const exports = bars.createDiv({ cls: ["mm-toolbar", "mm-toolbar-export"] });
 		const camera = bars.createDiv({ cls: ["mm-toolbar", "mm-toolbar-camera"] });
+		this.extraToolbars = [exports, camera];
 
 		const button = (
 			bar: HTMLElement,
@@ -745,6 +745,11 @@ export class MindmapView extends TextFileView implements MapController {
 			if (!this.isLocked() && this.redoStack.length > 0) this.redo();
 		});
 		this.lockButton = button(actions, "lock", "Unlock editing", () => this.plugin.setLocked(!this.isLocked()));
+		this.moreToolsButton = button(actions, "chevron-down", "Show more tools", () => {
+			this.extraToolsExpanded = !this.extraToolsExpanded;
+			this.updateExtraToolbars();
+		});
+		this.updateExtraToolbars();
 		this.updateActionButtons();
 
 		// The same four entries the palette and the tab menu are built from, in
@@ -762,6 +767,16 @@ export class MindmapView extends TextFileView implements MapController {
 		button(camera, "chevrons-down-up", "Collapse all", () => this.collapseAll());
 		button(camera, "search", "Find in the map", () => this.openSearch());
 		button(camera, "help-circle", "Keyboard shortcuts", () => this.showShortcuts());
+	}
+
+	private updateExtraToolbars(): void {
+		for (const toolbar of this.extraToolbars) toolbar.hidden = !this.extraToolsExpanded;
+		if (!this.moreToolsButton) return;
+		const label = this.extraToolsExpanded ? "Hide more tools" : "Show more tools";
+		setIcon(this.moreToolsButton, this.extraToolsExpanded ? "chevron-up" : "chevron-down");
+		this.moreToolsButton.setAttribute("aria-label", label);
+		this.moreToolsButton.setAttribute("title", label);
+		this.moreToolsButton.setAttribute("aria-expanded", String(this.extraToolsExpanded));
 	}
 
 	private updateActionButtons(): void {
@@ -2327,6 +2342,7 @@ export class MindmapView extends TextFileView implements MapController {
 			this.search.focus();
 			return;
 		}
+		this.contentEl.addClass("mm-search-open");
 		this.search = new SearchBar(this.contentEl, {
 			query: this.searchQuery,
 			onQuery: (query) => this.onQueryChanged(query),
@@ -2361,6 +2377,7 @@ export class MindmapView extends TextFileView implements MapController {
 	private resetSearch(): void {
 		this.search?.destroy();
 		this.search = null;
+		this.contentEl.removeClass("mm-search-open");
 		this.matchKeys = [];
 		this.matchIndex = 0;
 		this.pendingReveal = null;

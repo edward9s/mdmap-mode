@@ -52,9 +52,15 @@ reading.
 
 ## Layout, history and lock
 
-Five controls above the export buttons let you place branches **all on the right**
-or **on both sides**, **undo** or **redo** Markdown edits, and **lock/unlock**
-editing. The lock is on by default and its state is saved with the plugin settings.
+The top-right toolbar within the map has **right-side layout**, **balanced
+layout**, **undo**, **redo**, and **lock/unlock** controls. A sixth button, just
+after the lock, expands or hides the two additional rows for export, zoom,
+folding, search and help. Those rows start hidden whenever a map view opens.
+While search is open, the toolbar hides to avoid covering the search field.
+
+New installations default to **right-side layout**. An existing layout
+preference is preserved. Editing is locked by default, and its lock state
+is saved with the plugin settings.
 
 While locked, the map can still be panned, zoomed, searched and folded, links
 can still be opened, and the right-side/balanced layout buttons remain available.
