@@ -1,7 +1,5 @@
 # mdmap mode
 
-*[繁體中文說明](README.zh.md)*
-
 > This is a modified fork of [Mindmap Mode](https://github.com/PHANTOM-Nw/obsidian-mindmap-mode), originally developed by PHANTOM-Nw. The original MIT license and copyright notice are retained.
 
 Turn any Obsidian note into an editable, radial mind map — the same way you
