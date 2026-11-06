@@ -50,6 +50,17 @@ Any of these work, on the note you already have open:
 Toggling back returns you to whichever markdown mode you came from — source or
 reading.
 
+## Layout, history and lock
+
+Five controls above the export buttons let you place branches **all on the right**
+or **on both sides**, **undo** or **redo** Markdown edits, and **lock/unlock**
+editing. The lock is on by default and its state is saved with the plugin settings.
+
+While locked, the map can still be panned, zoomed, searched and folded, and links
+can still be opened. Editing, dragging nodes, changing the layout and undo/redo
+are disabled until unlocked. Layout changes are not part of the Markdown undo
+history.
+
 ## Editing on the map
 
 | Input | Action |

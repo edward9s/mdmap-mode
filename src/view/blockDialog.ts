@@ -34,6 +34,7 @@ export interface BlockDialogOptions {
 	sourcePath: string;
 	blocks: DialogBlock[];
 	mode: BlockDialogMode;
+	locked: boolean;
 	/** Only the blocks whose text actually changed. Ordering is the caller's. */
 	onSave: (edits: Array<{ index: number; text: string }>) => void;
 	onClosed?: () => void;
@@ -76,12 +77,14 @@ export class BlockDialog extends Modal {
 		const { contentEl } = this;
 		contentEl.createEl("p", {
 			cls: "mm-dialog-hint",
-			text: "This content stays in the note exactly where it is. Editing here rewrites only these lines.",
+			text: this.opts.locked
+				? "This content is read-only while the map is locked."
+				: "This content stays in the note exactly where it is. Editing here rewrites only these lines.",
 		});
 
 		const modes = contentEl.createDiv({ cls: "mm-dialog-modes" });
 		this.addTab(modes, "read", "Preview");
-		this.addTab(modes, "edit", "Source");
+		if (!this.opts.locked) this.addTab(modes, "edit", "Source");
 
 		this.body = contentEl.createDiv({ cls: "mm-dialog-body" });
 		// Bound once, not per repaint: `renderBody` empties this element, it never
@@ -91,9 +94,11 @@ export class BlockDialog extends Modal {
 
 		const actions = contentEl.createDiv({ cls: "mm-dialog-actions" });
 		actions.createEl("button", { text: "Close" }).addEventListener("click", () => this.close());
-		actions
-			.createEl("button", { cls: "mod-cta", text: "Save" })
-			.addEventListener("click", () => this.save());
+		if (!this.opts.locked) {
+			actions
+				.createEl("button", { cls: "mod-cta", text: "Save" })
+				.addEventListener("click", () => this.save());
+		}
 
 		this.renderBody();
 	}

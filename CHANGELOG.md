@@ -11,6 +11,13 @@ line. The `<br>` is deliberate — a plain newline renders as a line break in
 release notes but collapses to a space when this file is viewed on GitHub, and
 the entry has to read correctly in both.
 
+## [1.2.0] - 2026-11-06
+
+### 新增 / Added
+
+- 加入向右布局、左右布局、復原、重做與鎖定／解鎖五個工具列按鈕。鎖定狀態預設開啟並會記住；鎖定時仍能平移、縮放、搜尋及折疊分支。<br>Added toolbar controls for right-side layout, balanced layout, undo, redo, and lock/unlock. Editing is locked by default and the state is remembered; panning, zooming, searching and folding remain available.
+- 鎖定時禁止修改 Markdown、拖曳節點、切換布局及復原／重做，正文內容檢視也維持唯讀。<br>While locked, Markdown edits, node dragging, layout changes and undo/redo are disabled, and note-content dialogs are read-only.
+
 ## [1.1.2] - 2026-09-15
 
 ### 修复 / Fixed
