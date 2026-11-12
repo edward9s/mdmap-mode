@@ -1,5 +1,5 @@
-import { Notice, Plugin, TFile, TFolder, debounce, setIcon } from "obsidian";
-import type { ViewState, WorkspaceLeaf } from "obsidian";
+import { Modal, Notice, Plugin, Setting, TFile, TFolder, debounce, setIcon } from "obsidian";
+import type { App, ViewState, WorkspaceLeaf } from "obsidian";
 
 import { MINDMAP_VIEW_TYPE, MindmapView } from "./view/MindmapView.ts";
 import { EXPORT_COMMANDS } from "./export/run.ts";
@@ -22,6 +22,44 @@ import {
 } from "./updateNotice.ts";
 
 const HEADER_BUTTON_CLASS = "mdmap-mode-toggle";
+const READ_ME_TOKEN_ID = "mdmap-read-me-bridge";
+
+/** Android bridge pairing is stored separately from the vault's data.json. */
+class ReadMePairingModal extends Modal {
+	override onOpen(): void {
+		this.contentEl.createEl("h3", { text: "Android read-aloud pairing" });
+		this.contentEl.createEl("p", {
+			text: "Install Read Me Offline, enable its Obsidian bridge, then paste the pairing token shown in that app. The token is saved in Obsidian SecretStorage.",
+		});
+		let token = this.app.secretStorage?.getSecret(READ_ME_TOKEN_ID) ?? "";
+		new Setting(this.contentEl)
+			.setName("Pairing token")
+			.addText((field) => {
+				field.inputEl.type = "password";
+				field.setPlaceholder("Token from Read Me Offline");
+				field.setValue(token);
+				field.onChange((value) => { token = value.trim(); });
+			});
+		new Setting(this.contentEl)
+			.addButton((button) => button
+				.setButtonText("Save pairing")
+				.setCta()
+				.onClick(() => {
+					if (!token) {
+						new Notice("Enter the pairing token.");
+						return;
+					}
+					this.app.secretStorage.setSecret(READ_ME_TOKEN_ID, token);
+					this.close();
+					new Notice("Android read-aloud pairing saved.");
+				}));
+	}
+
+	override onClose(): void {
+		this.contentEl.empty();
+	}
+}
+
 
 /** Where the fold store sits in `data.json`, beside the flat settings. */
 const FOLD_STATE_KEY = "foldState";
@@ -85,6 +123,18 @@ export default class MindmapPlugin extends Plugin {
 				if (!leaf || !this.isToggleable(leaf)) return false;
 				if (!checking) void this.toggleLeaf(leaf);
 				return true;
+			},
+		});
+
+		this.addCommand({
+			id: "configure-android-read-aloud",
+			name: "Configure Android read-aloud pairing",
+			callback: () => {
+				if (!this.app.secretStorage) {
+					new Notice("Obsidian SecretStorage is unavailable. Update Obsidian to configure Android narration.");
+					return;
+				}
+				new ReadMePairingModal(this.app).open();
 			},
 		});
 
@@ -232,6 +282,10 @@ export default class MindmapPlugin extends Plugin {
 		if (record === null) return;
 		this.lastSeenVersion = record;
 		await this.savePluginData();
+	}
+
+	getReadMeToken(): string | null {
+		return this.app.secretStorage?.getSecret(READ_ME_TOKEN_ID) ?? null;
 	}
 
 	override onunload(): void {
