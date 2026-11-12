@@ -26,6 +26,7 @@ import type {
 	StoredShortcuts,
 } from "./view/shortcuts.ts";
 import type MindmapPlugin from "./main.ts";
+import { DEFAULT_TEACHING_PROMPT } from "./model/teachingPrompt.ts";
 
 export type LayoutMode = "balanced" | "right";
 export type WheelMode = "zoom" | "pan";
@@ -43,6 +44,7 @@ export interface MindmapSettings {
 	branchColors: boolean;
 	showBodyNodes: boolean;
 	inlineAnnotations: boolean;
+	teachingPrompt: string;
 	maxNodeWidth: number;
 	horizontalGap: number;
 	verticalGap: number;
@@ -73,6 +75,7 @@ export const DEFAULT_SETTINGS: MindmapSettings = {
 	branchColors: true,
 	showBodyNodes: true,
 	inlineAnnotations: true,
+	teachingPrompt: DEFAULT_TEACHING_PROMPT,
 	maxNodeWidth: 340,
 	horizontalGap: 64,
 	verticalGap: 14,
@@ -342,6 +345,15 @@ export class MindmapSettingTab extends PluginSettingTab {
 			desc: RESTORE_ALL.desc,
 			render: (setting: Setting) => this.renderRestoreAll(setting),
 		});
+		groups.push({
+			type: "group",
+			heading: "AI teaching",
+			items: [{
+				name: "Teaching prompt",
+				desc: "Text copied before the selected mind map branch. Edits are saved when the field loses focus.",
+				render: (setting: Setting) => this.renderTeachingPrompt(setting),
+			}],
+		});
 		groups.push({ type: "group", heading: "Shortcuts", items: rows });
 		return groups;
 	}
@@ -369,6 +381,13 @@ export class MindmapSettingTab extends PluginSettingTab {
 			new Setting(containerEl).setName(group.heading).setHeading();
 			for (const item of group.items) this.renderItem(containerEl, item);
 		}
+
+		new Setting(containerEl).setName("AI teaching").setHeading();
+		this.renderTeachingPrompt(
+			new Setting(containerEl)
+				.setName("Teaching prompt")
+				.setDesc("Text copied before the selected mind map branch. Edits are saved when the field loses focus."),
+		);
 
 		new Setting(containerEl).setName("Shortcuts").setHeading();
 		for (const entry of SHORTCUTS) {
@@ -418,6 +437,21 @@ export class MindmapSettingTab extends PluginSettingTab {
 				// No other control type appears in GROUPS.
 				break;
 		}
+	}
+
+	/** Save on blur rather than reparsing the map on every keystroke. */
+	private renderTeachingPrompt(setting: Setting): void {
+		setting.addTextArea((field) => {
+			field.setValue(this.plugin.settings.teachingPrompt);
+			field.inputEl.rows = 8;
+			field.inputEl.cols = 42;
+			field.inputEl.addEventListener("change", () => {
+				const value = field.getValue();
+				if (value !== this.plugin.settings.teachingPrompt) {
+					void this.commit("teachingPrompt", value);
+				}
+			});
+		});
 	}
 
 	// --- shortcuts ----------------------------------------------------------------
@@ -613,6 +647,7 @@ export class MindmapSettingTab extends PluginSettingTab {
 	}
 
 	private applySideEffects(key: string): void {
+		if (key === "teachingPrompt") return;
 		if (key === HEADER_BUTTON_KEY) this.plugin.refreshHeaderButtons();
 		else this.plugin.refreshAllViews();
 	}

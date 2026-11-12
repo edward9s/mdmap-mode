@@ -53,8 +53,8 @@ reading.
 ## Layout, history and lock
 
 The top-right toolbar within the map has **right-side layout**, **balanced
-layout**, **undo**, **redo**, **lock/unlock**, and **read aloud** controls.
-The read-aloud button sits immediately after the lock; the following button
+layout**, **undo**, **redo**, **lock/unlock**, and **copy AI teaching prompt** controls.
+The copy button sits immediately after the lock; the following button
 expands or hides the two additional rows for export, zoom, folding, search
 and help. Those rows start hidden whenever a map view opens.
 While search is open, the toolbar hides to avoid covering the search field.
@@ -82,32 +82,23 @@ The plugin remembers each note's map-centre position and zoom in its own
 `data.json`. Reopening the note restores this view instead of fitting the
 whole map again. The view is independent of the note's fold-state option.
 
-## Read branches aloud
+## Copy a branch for ChatGPT voice teaching
 
-Tap a node to select it, then tap the speaker beside the lock button to read
-**that node as the root**. With no selection, reading starts at the map root.
-Tap the button again (it changes to Stop) to stop playback. The editing lock
-does not affect narration.
+The clipboard button beside **Lock** copies an editable AI teaching prompt
+followed by the mind map content. Paste the result into ChatGPT and start a
+voice conversation using your existing ChatGPT subscription. The button does
+not start or control audio.
 
-Reading uses overlapping two-level groups: first the parent and all of its
-immediate children, then the next parent with children and its immediate
-children. For `A → (B, C, D)` and `C → (E, F)`, the spoken groups are
-`A, B, C, D` followed by `C, E, F`. Leaf nodes do not become a separate
-group unless they were chosen as the root. Source order is respected, including
-branches that are currently folded. Visible inline annotations are read after
-their node titles. The source note is never changed.
-
-On desktop and other environments providing Web Speech, narration uses the
-system's speech synthesis. **Android Obsidian's WebView does not expose Web
-Speech**. To use one-tap narration on Android, first install
-[Read Me Offline](https://github.com/JoshShearer/Read-Me) (from F-Droid or its
-releases), open its Settings and enable **Obsidian bridge**, and copy the pairing
-token. In Obsidian's command palette, run
-**Configure Android read-aloud pairing** and paste the token. After this
-one-time setup, the map's speaker button starts or stops Read Me Offline's
-local, offline narration. The token is stored in Obsidian SecretStorage,
-not in the plugin's `data.json`. The companion's bridge is accessed only at
-`127.0.0.1:8787`; no note text is sent to a cloud service.
+- **No node selected:** copies the entire mind map.
+- **Node selected:** copies that node and **all descendants**, including folded
+  branches. Selecting a leaf copies just that leaf.
+- Source order, parent/child indentation, checkboxes, inline annotations,
+  paragraphs, tables, and code blocks are preserved without preview truncation.
+- Edit the multi-line **Teaching prompt** under **Settings → mdmap mode →
+  AI teaching**. Changes are saved when the field loses focus. No API keys
+  or extra apps are required.
+- Locked-mode long-press still copies the individual node's original text.
+  Using the AI copy button never changes the original Markdown note.
 
 ## Editing on the map
 

@@ -9,8 +9,7 @@ import type {
 } from "obsidian";
 
 import { parseMarkdown } from "../model/parse.ts";
-import { readingGroups } from "../model/reading.ts";
-import { plainText } from "../model/inlineText.ts";
+import { branchOutline, teachingMessage } from "../model/teachingPrompt.ts";
 import { annotationText, bodyCardCount } from "../model/annotations.ts";
 import type { MindNode, ParsedDoc } from "../model/types.ts";
 import {
@@ -65,7 +64,6 @@ import type { KeyCombo, ShortcutBindings } from "./shortcuts.ts";
 import { SearchBar } from "./searchBar.ts";
 import { BlockDialog } from "./blockDialog.ts";
 import { AnnotationDialog } from "./annotationDialog.ts";
-import { BranchSpeech } from "./BranchSpeech.ts";
 import type { BlockDialogMode, DialogBlock } from "./blockDialog.ts";
 import {
 	clearMathCache,
@@ -329,8 +327,6 @@ export class MindmapView extends TextFileView implements MapController {
 	private undoButton: HTMLElement | null = null;
 	private redoButton: HTMLElement | null = null;
 	private lockButton: HTMLElement | null = null;
-	private readButton: HTMLElement | null = null;
-	private readonly branchSpeech = new BranchSpeech(() => this.updateReadButton());
 	private moreToolsButton: HTMLElement | null = null;
 	private extraToolbars: HTMLElement[] = [];
 	private search: SearchBar | null = null;
@@ -524,7 +520,6 @@ export class MindmapView extends TextFileView implements MapController {
 		}
 		this.perf.event("setViewData", { clear, skipped: false });
 
-		this.branchSpeech.stop();
 		this.data = data;
 		if (clear) {
 			// Torn down without restoring folds: `this.file` already points at the
@@ -557,7 +552,6 @@ export class MindmapView extends TextFileView implements MapController {
 	}
 
 	override clear(): void {
-		this.branchSpeech.stop();
 		this.data = "";
 		this.drawnData = null;
 		this.parsed = null;
@@ -598,7 +592,6 @@ export class MindmapView extends TextFileView implements MapController {
 	}
 
 	override async onClose(): Promise<void> {
-		this.branchSpeech.stop();
 		this.paintToken++;
 		this.cancelFrame();
 		// Closing the tab is the last chance to keep a search out of the record:
@@ -751,7 +744,9 @@ export class MindmapView extends TextFileView implements MapController {
 			if (!this.isLocked() && this.redoStack.length > 0) this.redo();
 		});
 		this.lockButton = button(actions, "lock", "Unlock editing", () => this.plugin.setLocked(!this.isLocked()));
-		this.readButton = button(actions, "volume-2", "Read selected branch aloud", () => this.toggleReading());
+		button(actions, "clipboard-copy", "Copy AI teaching prompt and selected branch", () => {
+			void this.copyTeachingPrompt();
+		});
 		this.moreToolsButton = button(actions, "chevron-down", "Show more tools", () => {
 			this.plugin.setExtraToolsExpanded(!this.plugin.settings.extraToolsExpanded);
 		});
@@ -810,39 +805,26 @@ export class MindmapView extends TextFileView implements MapController {
 			this.lockButton.toggleClass("is-active", locked);
 			this.lockButton.setAttribute("aria-pressed", String(locked));
 		}
-		this.updateReadButton();
 	}
 
-	private updateReadButton(): void {
-		if (!this.readButton) return;
-		const reading = this.branchSpeech.active;
-		const label = reading ? "Stop reading" : "Read selected branch aloud";
-		setIcon(this.readButton, reading ? "square" : "volume-2");
-		this.readButton.setAttribute("aria-label", label);
-		this.readButton.setAttribute("title", label);
-		this.readButton.toggleClass("is-active", reading);
-		this.readButton.setAttribute("aria-pressed", String(reading));
-	}
-
-	private toggleReading(): void {
-		if (this.branchSpeech.active) {
-			this.branchSpeech.stop();
-			return;
-		}
+	private async copyTeachingPrompt(): Promise<void> {
 		const parsed = this.parsed;
 		if (!parsed) {
-			new Notice("Open a mind map before reading aloud.");
+			new Notice("Open a mind map before copying its content.");
 			return;
 		}
-		const root = this.selectedNode() ?? parsed.root;
-		const groups = readingGroups(root).map((group) => group.map((node) => {
-			const title = plainText(node.text).trim();
-			const notes = this.plugin.settings.inlineAnnotations
-				? plainText(annotationText(parsed, node)).trim()
-				: "";
-			return [title, notes].filter(Boolean).join("。");
-		}).filter(Boolean).join("。")).filter(Boolean);
-		void this.branchSpeech.toggle(groups, this.plugin.getReadMeToken());
+		const selected = this.selectedNode();
+		const content = teachingMessage(
+			this.plugin.settings.teachingPrompt,
+			this.file?.basename ?? "Untitled",
+			branchOutline(parsed, selected ?? parsed.root),
+		);
+		try {
+			await navigator.clipboard.writeText(content);
+			new Notice(selected ? "Selected branch and prompt copied" : "Mind map and prompt copied");
+		} catch {
+			new Notice("Unable to copy the AI teaching prompt.");
+		}
 	}
 
 	/**
@@ -1866,7 +1848,6 @@ export class MindmapView extends TextFileView implements MapController {
 
 	private commit(text: string, focusLine: number, edit: boolean): void {
 		if (this.isLocked()) return;
-		this.branchSpeech.stop();
 		this.data = text;
 		this.pendingFocus = focusLine >= 0 ? { line: focusLine, edit } : null;
 		this.requestSave();
