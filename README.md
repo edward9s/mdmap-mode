@@ -95,8 +95,12 @@ not start or control audio.
 - Source order, parent/child indentation, checkboxes, inline annotations,
   paragraphs, tables, and code blocks are preserved without preview truncation.
 - Edit the multi-line **Teaching prompt** under **Settings → mdmap mode →
-  AI teaching**. Changes are saved when the field loses focus. No API keys
-  or extra apps are required.
+  AI teaching**. The default now requests an interactive Traditional Chinese
+  voice lesson: explanation, one understanding question, then wait for the
+  student's answer. Changes are saved when the field loses focus. Previously
+  customized prompts are preserved; the former unchanged default is updated.
+  The exported content heading is appended automatically, so it does not need
+  to be typed into the prompt. No API keys or extra apps are required.
 - Locked-mode long-press still copies the individual node's original text.
   Using the AI copy button never changes the original Markdown note.
 

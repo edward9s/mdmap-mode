@@ -4,6 +4,7 @@ import type { ViewState, WorkspaceLeaf } from "obsidian";
 import { MINDMAP_VIEW_TYPE, MindmapView } from "./view/MindmapView.ts";
 import { EXPORT_COMMANDS } from "./export/run.ts";
 import { DEFAULT_SETTINGS, MindmapSettingTab } from "./settings.ts";
+import { resolveTeachingPrompt } from "./model/teachingPrompt.ts";
 import type { LayoutMode, MindmapSettings } from "./settings.ts";
 import {
 	forgetFolder,
@@ -257,7 +258,11 @@ export default class MindmapPlugin extends Plugin {
 		// The spread is shallow, so a vault with no rebound shortcuts would share
 		// the one object `DEFAULT_SETTINGS` holds -- and the first rebinding would
 		// write itself into the defaults every other reader compares against.
-		this.settings = { ...merged, shortcuts: { ...merged.shortcuts } };
+		this.settings = {
+			...merged,
+			teachingPrompt: resolveTeachingPrompt(merged.teachingPrompt),
+			shortcuts: { ...merged.shortcuts },
+		};
 	}
 
 	async saveSettings(): Promise<void> {
