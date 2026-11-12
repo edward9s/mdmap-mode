@@ -94,6 +94,9 @@ not start or control audio.
   branches. Selecting a leaf copies just that leaf.
 - Source order, parent/child indentation, checkboxes, inline annotations,
   paragraphs, tables, and code blocks are preserved without preview truncation.
+  When the note has a YAML frontmatter `source_url`, the copied message also
+  includes that URL after the source note name; notes without it keep the
+  original heading.
 - Edit the multi-line **Teaching prompt** under **Settings → mdmap mode →
   AI teaching**. The concise default requests interactive Traditional Chinese
   voice teaching focused on understanding, examples, and one question at a time.

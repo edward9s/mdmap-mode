@@ -1,4 +1,4 @@
-import { Keymap, Menu, Notice, Platform, Scope, TextFileView, setIcon } from "obsidian";
+import { Keymap, Menu, Notice, Platform, Scope, TextFileView, parseYaml, setIcon } from "obsidian";
 import type {
 	KeymapContext,
 	KeymapEventHandler,
@@ -9,7 +9,7 @@ import type {
 } from "obsidian";
 
 import { parseMarkdown } from "../model/parse.ts";
-import { branchOutline, teachingMessage } from "../model/teachingPrompt.ts";
+import { branchOutline, frontmatterSourceUrl, teachingMessage } from "../model/teachingPrompt.ts";
 import { annotationText, bodyCardCount } from "../model/annotations.ts";
 import type { MindNode, ParsedDoc } from "../model/types.ts";
 import {
@@ -814,16 +814,21 @@ export class MindmapView extends TextFileView implements MapController {
 			return;
 		}
 		const selected = this.selectedNode();
-		const content = teachingMessage(
-			this.plugin.settings.teachingPrompt,
-			this.file?.basename ?? "Untitled",
-			branchOutline(parsed, selected ?? parsed.root),
-		);
 		try {
+			const frontmatter = parsed.bodyStart > 0
+				? parseYaml(parsed.doc.lines.slice(1, parsed.bodyStart - 1).join("\n"))
+				: null;
+			const content = teachingMessage(
+				this.plugin.settings.teachingPrompt,
+				this.file?.basename ?? "Untitled",
+				branchOutline(parsed, selected ?? parsed.root),
+				frontmatterSourceUrl(frontmatter),
+			);
 			await navigator.clipboard.writeText(content);
 			new Notice(selected ? "Selected branch and prompt copied" : "Mind map and prompt copied");
-		} catch {
-			new Notice("Unable to copy the AI teaching prompt.");
+		} catch (error) {
+			console.error("Cannot copy AI teaching prompt:", error);
+			new Notice("Unable to copy the AI teaching prompt. Check source_url and clipboard access.");
 		}
 	}
 

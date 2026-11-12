@@ -56,7 +56,7 @@ export const PREVIOUS_VERBOSE_TEACHING_PROMPT = `你是一位使用繁體中文�
 
 現在請開始教學。先介紹整體主題，再從第一組分支開始，講解後提出一道理解問題，等待我回答。`;
 
-export const DEFAULT_TEACHING_PROMPT = `你是一位使用繁體中文、擅長引導理解的考試複習老師。請以後面的心智圖為備課資料，進行互動式語音教學。
+export const PREVIOUS_COMPACT_TEACHING_PROMPT = `你是一位使用繁體中文、擅長引導理解的考試複習老師。請以後面的心智圖為備課資料，進行互動式語音教學。
 
 教學原則
 - 以真正理解、能應用於考試為目標。用自己的話解釋概念、原理、因果關係及相互關聯，不要逐字朗讀心智圖或只改寫成口訣。
@@ -72,10 +72,27 @@ export const DEFAULT_TEACHING_PROMPT = `你是一位使用繁體中文、擅長�
 
 現在請先介紹整體主題，再講解第一組分支，提出一道理解問題後等待我回答.`;
 
+export const DEFAULT_TEACHING_PROMPT = `你是一位使用繁體中文、擅長引導理解的考試複習老師。請以後面的心智圖為備課資料，進行互動式語音教學。
+
+教學原則
+- 以真正理解、能應用於考試為目標。用自己的話解釋概念、原理、因果關係及相互關聯，不要逐字朗讀心智圖或只改寫成口訣。
+- 先簡介整體主題，再依父子節點分組深入。重要節點、註解與條件都要涵蓋，但以理解程度決定進度，不急著講完。
+- 優先使用具體例子、生活比喻及分步推理建立直覺，再補充專有名詞、考試重點及常見陷阱。
+- 可以補充可靠的基礎知識，但應區分來源與補充，避免無根據的推論；遇到例外、不確定性或重要限制，應明確說明。
+
+互動方式
+- 採用「一段講解 → 一道理解問題 → 等待回答」的節奏。問題應包含適當的原因推理或情境應用，而非僅考記憶。
+- 正確時簡要確認原因；錯誤或模糊時明確糾正並解釋關鍵，不給予不實肯定。
+- 如果我不懂，改用真正不同的例子或解釋方法；如果我提問，先回答再恢復進度。
+- 語氣自然清楚，適合聆聽，深度與速度隨理解程度調整。不反覆詢問是否繼續；要求暫停時保留進度。
+
+現在請先介紹整體主題，再講解第一組分支，提出一道理解問題。等待我回答。`;
+
 /** Upgrade only exact bundled defaults; preserve every user-edited prompt. */
 export function resolveTeachingPrompt(savedPrompt: string): string {
 	return savedPrompt === PREVIOUS_TEACHING_PROMPT
 		|| savedPrompt === PREVIOUS_VERBOSE_TEACHING_PROMPT
+		|| savedPrompt === PREVIOUS_COMPACT_TEACHING_PROMPT
 		? DEFAULT_TEACHING_PROMPT
 		: savedPrompt;
 }
@@ -117,7 +134,23 @@ export function branchOutline(parsed: ParsedDoc, root: MindNode): string {
 	return output.join("\n").trimEnd();
 }
 
-export function teachingMessage(prompt: string, noteTitle: string, outline: string): string {
+/** Read the source URL from Obsidian's parsed YAML properties, if present. */
+export function frontmatterSourceUrl(frontmatter: unknown): string | null {
+	if (typeof frontmatter !== "object" || frontmatter === null) return null;
+	const value = (frontmatter as Record<string, unknown>).source_url;
+	if (value === undefined || value === null) return null;
+	if (typeof value !== "string") throw new Error("source_url must be a string.");
+	return value.trim() || null;
+}
+
+export function teachingMessage(
+	prompt: string,
+	noteTitle: string,
+	outline: string,
+	sourceUrl: string | null = null,
+): string {
 	const header = "心智圖內容（來源筆記：" + noteTitle + "）：";
-	return [prompt.trim(), header, outline].filter(Boolean).join("\n\n");
+	const source = sourceUrl ? "來源網址：" + sourceUrl : "";
+	return [prompt.trim(), [header, source].filter(Boolean).join("\n"), outline]
+		.filter(Boolean).join("\n\n");
 }

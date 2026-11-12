@@ -6,7 +6,9 @@ import {
 	DEFAULT_TEACHING_PROMPT,
 	PREVIOUS_TEACHING_PROMPT,
 	PREVIOUS_VERBOSE_TEACHING_PROMPT,
+	PREVIOUS_COMPACT_TEACHING_PROMPT,
 	branchOutline,
+	frontmatterSourceUrl,
 	resolveTeachingPrompt,
 	teachingMessage,
 } from "./teachingPrompt.ts";
@@ -74,12 +76,36 @@ test("the concise teaching prompt preserves critical learning behavior", () => {
 	assert.ok(DEFAULT_TEACHING_PROMPT.length < PREVIOUS_VERBOSE_TEACHING_PROMPT.length);
 	const message = teachingMessage(DEFAULT_TEACHING_PROMPT, "生物學", "- DNA 複製");
 	assert.equal(message.match(/心智圖內容（來源筆記：/g)?.length, 1);
+	assert.ok(DEFAULT_TEACHING_PROMPT.endsWith("等待我回答。"));
+	assert.ok(!DEFAULT_TEACHING_PROMPT.endsWith("等待我回答."));
 });
 
 test("updates both bundled defaults but preserves customized text", () => {
 	assert.equal(resolveTeachingPrompt(PREVIOUS_TEACHING_PROMPT), DEFAULT_TEACHING_PROMPT);
 	assert.equal(resolveTeachingPrompt(PREVIOUS_VERBOSE_TEACHING_PROMPT), DEFAULT_TEACHING_PROMPT);
+	assert.equal(resolveTeachingPrompt(PREVIOUS_COMPACT_TEACHING_PROMPT), DEFAULT_TEACHING_PROMPT);
 	assert.equal(resolveTeachingPrompt(DEFAULT_TEACHING_PROMPT), DEFAULT_TEACHING_PROMPT);
 	assert.equal(resolveTeachingPrompt("我自己的教學要求"), "我自己的教學要求");
 	assert.equal(resolveTeachingPrompt(""), "");
+});
+
+test("adds source_url beside the source note when available", () => {
+	const url = "https://example.org/original?item=42";
+	const sourceUrl = frontmatterSourceUrl({ source_url: "  " + url + "  " });
+	const message = teachingMessage("請解說。", "分生_生物技術_序列分析", "- 核酸指紋", sourceUrl);
+	assert.equal(message, [
+		"請解說。",
+		"心智圖內容（來源筆記：分生_生物技術_序列分析）：\n來源網址：" + url,
+		"- 核酸指紋",
+	].join("\n\n"));
+});
+
+test("omits missing source_url and rejects invalid values", () => {
+	assert.equal(frontmatterSourceUrl(null), null);
+	assert.equal(frontmatterSourceUrl({}), null);
+	assert.equal(frontmatterSourceUrl({ source_url: " " }), null);
+	assert.equal(frontmatterSourceUrl({ source_url: null }), null);
+	assert.throws(() => frontmatterSourceUrl({ source_url: 123 }), /source_url must be a string/);
+	const message = teachingMessage("請解說。", "筆記 A", "- A", frontmatterSourceUrl({}));
+	assert.equal(message, ["請解說。", "心智圖內容（來源筆記：筆記 A）：", "- A"].join("\n\n"));
 });
