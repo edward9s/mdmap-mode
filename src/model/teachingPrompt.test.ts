@@ -5,6 +5,7 @@ import { parseMarkdown } from "./parse.ts";
 import {
 	DEFAULT_TEACHING_PROMPT,
 	PREVIOUS_TEACHING_PROMPT,
+	PREVIOUS_VERBOSE_TEACHING_PROMPT,
 	branchOutline,
 	resolveTeachingPrompt,
 	teachingMessage,
@@ -63,17 +64,22 @@ test("the message includes editable prompt and source title", () => {
 	].join("\n\n"));
 });
 
-test("the teaching prompt prioritizes understanding and one question at a time", () => {
+test("the concise teaching prompt preserves critical learning behavior", () => {
 	assert.ok(DEFAULT_TEACHING_PROMPT.includes("不要逐字朗讀心智圖"));
-	assert.ok(DEFAULT_TEACHING_PROMPT.includes("一段講解、一道問題、等待回答"));
-	assert.ok(DEFAULT_TEACHING_PROMPT.includes("不要將模糊或錯誤的回答直接判定為正確"));
-	assert.ok(DEFAULT_TEACHING_PROMPT.includes("當我要求暫停時，保留目前的學習進度"));
-	assert.ok(DEFAULT_TEACHING_PROMPT.includes("忠實保留重要條件與限制"));
+	assert.ok(DEFAULT_TEACHING_PROMPT.includes("一道理解問題 → 等待回答"));
+	assert.ok(DEFAULT_TEACHING_PROMPT.includes("錯誤或模糊時明確糾正"));
+	assert.ok(DEFAULT_TEACHING_PROMPT.includes("如果我不懂，改用真正不同的例子或解釋方法"));
+	assert.ok(DEFAULT_TEACHING_PROMPT.includes("要求暫停時保留進度"));
+	assert.ok(DEFAULT_TEACHING_PROMPT.includes("例外、不確定性或重要限制"));
+	assert.ok(DEFAULT_TEACHING_PROMPT.length < PREVIOUS_VERBOSE_TEACHING_PROMPT.length);
 	const message = teachingMessage(DEFAULT_TEACHING_PROMPT, "生物學", "- DNA 複製");
 	assert.equal(message.match(/心智圖內容（來源筆記：/g)?.length, 1);
 });
 
-test("updates the former bundled default but preserves customized text", () => {
+test("updates both bundled defaults but preserves customized text", () => {
 	assert.equal(resolveTeachingPrompt(PREVIOUS_TEACHING_PROMPT), DEFAULT_TEACHING_PROMPT);
+	assert.equal(resolveTeachingPrompt(PREVIOUS_VERBOSE_TEACHING_PROMPT), DEFAULT_TEACHING_PROMPT);
+	assert.equal(resolveTeachingPrompt(DEFAULT_TEACHING_PROMPT), DEFAULT_TEACHING_PROMPT);
 	assert.equal(resolveTeachingPrompt("我自己的教學要求"), "我自己的教學要求");
+	assert.equal(resolveTeachingPrompt(""), "");
 });
