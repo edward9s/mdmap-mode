@@ -29,7 +29,11 @@ export class BranchSpeech {
 	private bridgeToken: string | null = null;
 	private timer: number | null = null;
 
-	constructor(private readonly onChange: () => void) {}
+	private readonly onChange: () => void;
+
+	constructor(onChange: () => void) {
+		this.onChange = onChange;
+	}
 
 	get active(): boolean {
 		return this.engine !== "none";

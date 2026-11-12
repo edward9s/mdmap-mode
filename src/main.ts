@@ -1,5 +1,5 @@
 import { Modal, Notice, Plugin, Setting, TFile, TFolder, debounce, setIcon } from "obsidian";
-import type { App, ViewState, WorkspaceLeaf } from "obsidian";
+import type { ViewState, WorkspaceLeaf } from "obsidian";
 
 import { MINDMAP_VIEW_TYPE, MindmapView } from "./view/MindmapView.ts";
 import { EXPORT_COMMANDS } from "./export/run.ts";

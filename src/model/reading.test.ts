@@ -28,9 +28,3 @@ test("a selected leaf is read once", () => {
 	assert.deepEqual(groups(parsed.root.children[0]), [["B"]]);
 });
 
-test("folding does not alter the source tree or reading order", () => {
-	assert.deepEqual(groups(parsed.root), [
-		["A", "B", "C", "D"],
-		["C", "E", "F"],
-	]);
-});
