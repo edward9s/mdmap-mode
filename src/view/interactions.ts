@@ -37,6 +37,7 @@ export interface MapController {
 	openLink(href: string, ev: MouseEvent): void;
 	/** The node's own menu, at the pointer. */
 	showMenu(id: string, ev: MouseEvent): void;
+	copyNode(id: string): Promise<void>;
 	navigate(direction: Direction): void;
 
 	openSearch(): void;
@@ -56,6 +57,7 @@ export interface MapController {
 }
 
 const DRAG_THRESHOLD = 5;
+const LONG_PRESS_MS = 550;
 
 /** The four navigation actions, as the direction each one steps in. */
 const DIRECTIONS: Record<
@@ -107,6 +109,43 @@ export function attachInteractions(controller: MapController): () => void {
 	// Whether a click is this drag's tail or a click of its own. The rule, and
 	// why the flag also comes down on pointerdown, is in `clickIntent.ts`.
 	const gate = new ClickGate();
+
+	// A held touch copies the card's source text. Moving the finger, adding a
+	// second finger, or ending the gesture early leaves panning and taps alone.
+	let hold: { id: string; pointerId: number; x: number; y: number; start: number } | null = null;
+	let copied: { id: string; at: number } | null = null;
+
+	on(viewport, "pointerdown", (ev) => {
+		copied = null;
+		if (hold) {
+			hold = null;
+			return;
+		}
+		if (ev.pointerType !== "touch" || ev.button !== 0 || !controller.isLocked() || controller.isEditing()) return;
+		const target = ev.target;
+		if (!(target instanceof HTMLElement) || target.closest(".mm-expand, .mm-checkbox")) return;
+		const card = target.closest<HTMLElement>(".mm-card");
+		const id = card && nodeIdFrom(card);
+		if (!id) return;
+		hold = { id, pointerId: ev.pointerId, x: ev.clientX, y: ev.clientY, start: ev.timeStamp };
+	});
+
+	on(viewport, "pointermove", (ev) => {
+		if (hold?.pointerId !== ev.pointerId) return;
+		if (Math.hypot(ev.clientX - hold.x, ev.clientY - hold.y) >= DRAG_THRESHOLD) hold = null;
+	});
+
+	on(viewport, "pointerup", (ev) => {
+		if (hold?.pointerId !== ev.pointerId) return;
+		const { id, start } = hold;
+		hold = null;
+		if (!controller.isLocked() || ev.timeStamp - start < LONG_PRESS_MS) return;
+		copied = { id, at: ev.timeStamp };
+		gate.dragEnded();
+		void controller.copyNode(id);
+	});
+
+	on(viewport, "pointercancel", () => { hold = null; });
 
 	// --- clicking ------------------------------------------------------------
 	on(viewport, "click", (ev) => {
@@ -363,6 +402,20 @@ export function attachInteractions(controller: MapController): () => void {
 		const id = nodeIdFrom(ev.target);
 		// Blank canvas keeps the platform menu too; a card gets the map's own.
 		if (!id) return;
+		const target = ev.target as HTMLElement;
+		const touchMenu = (ev as PointerEvent).pointerType === "touch" || hold?.id === id;
+		const recentlyCopied = copied?.id === id && ev.timeStamp - copied.at < 1000;
+		if (controller.isLocked() && target.closest(".mm-card") && (touchMenu || recentlyCopied)) {
+			ev.preventDefault();
+			ev.stopPropagation();
+			hold = null;
+			if (!recentlyCopied) {
+				copied = { id, at: ev.timeStamp };
+				gate.dragEnded();
+				void controller.copyNode(id);
+			}
+			return;
+		}
 		ev.preventDefault();
 		endDrag();
 		controller.showMenu(id, ev);
@@ -504,6 +557,7 @@ export function attachInteractions(controller: MapController): () => void {
 	});
 
 	return () => {
+		hold = null;
 		cancelDropFrame();
 		for (const off of cleanups) off();
 		cleanups.length = 0;

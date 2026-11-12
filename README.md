@@ -73,7 +73,9 @@ Android's own system-edge navigation gestures remain controlled by Android.
 
 When editing is locked, you can start panning from a node card or its text,
 not only from empty canvas space. A simple tap still activates links and fold
-buttons.
+buttons. On mobile, long-press a card to copy that node's text directly,
+without opening a menu. Moving the finger pans instead; note-content cards
+copy their complete source, even if the preview is truncated.
 
 The plugin remembers each note's map-centre position and zoom in its own
 `data.json`. Reopening the note restores this view instead of fitting the

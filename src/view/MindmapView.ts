@@ -1848,6 +1848,28 @@ export class MindmapView extends TextFileView implements MapController {
 		return this.plugin.settings.locked;
 	}
 
+	async copyNode(id: string): Promise<void> {
+		if (!this.isLocked() || !this.parsed) return;
+		const body = this.bodyNodes.get(id);
+		let text: string;
+		if (body) {
+			const owner = this.parsed.byKey.get(body.ownerKey);
+			const range = owner?.bodyRanges[body.index];
+			if (!range) return;
+			text = bodyRangeText(this.parsed, range);
+		} else {
+			const node = this.parsed.byId.get(id);
+			if (!node) return;
+			text = node.text;
+		}
+		try {
+			await navigator.clipboard.writeText(text);
+			new Notice("Node text copied");
+		} catch {
+			new Notice("Unable to copy node text");
+		}
+	}
+
 	selectedId(): string | null {
 		return this.selectedNode()?.id ?? null;
 	}
